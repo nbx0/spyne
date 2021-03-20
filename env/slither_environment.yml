@@ -1,6 +1,3 @@
-name: slither_environment
-prefix: ${HOME}/.anaconda3/envs/slither_environment
-
 channels:
   - conda-forge
   - bioconda
@@ -13,8 +10,6 @@ dependencies:
   - python
   - readline
   - snakemake
-
-# IRMA dependencies
   - blat
   - minimap2
   - parallel
