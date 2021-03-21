@@ -10,13 +10,13 @@ rule gather_fastqs:
 	output:
 		'IRMA/{barcode}.fastq'
 	shell:
-		'zcat guppy*/*/{wildcards.barcode}/*fastq.gz > {output}'
+		'cat guppy*/*/{wildcards.barcode}/*fastq.gz > {output}'
 
 # rule primer trimm
 
 rule irma:
 	input:
-		'IRMA/{barcode}.fastq'
+		'IRMA/{barcode}.fastq.gz'
 	output:
 		temp(touch('IRMA/{barcode}.irma.fin'))
 	threads:
