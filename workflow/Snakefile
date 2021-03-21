@@ -70,8 +70,8 @@ rule cutadapt:
         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq",
     group:
         "trim-map"
-    conda:
-        "../envs/cutadaptenv.yaml"
+    # conda:
+    #     "../envs/cutadaptenv.yaml"
     shell:
         "cutadapt -u 30 -u -30 -o {output} {input}"
 

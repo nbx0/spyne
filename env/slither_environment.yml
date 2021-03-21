@@ -6,6 +6,7 @@ channels:
 dependencies:
   - biopython>=1.78
   - bbmap
+  - cutadapt
   - pandas
   - python
   - readline
