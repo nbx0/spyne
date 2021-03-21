@@ -30,6 +30,7 @@ rule barcode_trim_l:
         "IRMA/{barcode}.fastq",
     output:
         "IRMA/{barcode}_bartrim_l.fastq",
+    log: ".{barcode}.bbduk.trim_left.stdout_and_stderr"
     group:
         "trim-map"
     shell:
@@ -42,6 +43,7 @@ rule barcode_trim_l:
         " k=17"
         " qin=33"
         " rcomp=f"
+        " &> {log}"
 
 
 rule barcode_trim_r:
@@ -49,6 +51,9 @@ rule barcode_trim_r:
         "IRMA/{barcode}_bartrim_l.fastq",
     output:
         "IRMA/{barcode}_bartrim_lr.fastq",
+    log:
+        out = ".{barcode}.bbduk.trim_right.stdout"
+        err = ".{barcode}.bbduk.trim_right.stderr"
     group:
         "trim-map"
     shell:
@@ -61,6 +66,8 @@ rule barcode_trim_r:
         " k=17"
         " qin=33"
         " rcomp=f"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 
 rule cutadapt:
