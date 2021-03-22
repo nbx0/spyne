@@ -5,11 +5,10 @@ Snakemake workflow specifically for ONT data processing with CDC-specific infras
 
 ## General Steps of the Pipeline
 1. remove barcodes from FastQ reads that were not removed due to having a few SNPs with `bbduk.sh`
-2. discard low quality reads with `cutadapt`
+2. trim primers from ends with `cutadapt`
 3. perform genome assembly with `irma` to generate a FastA consensus sequence
-4. align ... ???
-5. re-align ... ???
-6. ???
+4. confirm successful assembly and prepare for Hadoop upload
+
 
 
 ## Working Environment
