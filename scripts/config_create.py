@@ -4,7 +4,7 @@ from sys import argv, exit
 import pandas as pd
 from glob import glob
 
-root = '/'.join(abspath(__file__).split('/')[:-3])
+root = '/'.join(abspath(__file__).split('/')[:-2])
 
 
 ############### IN TESTING
