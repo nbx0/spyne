@@ -1,9 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-# Works with multiread fast5
 
 from sys import argv, exit
 import warnings
+
+
 with warnings.catch_warnings(): # To suppress annoying FutureWarning from h5py import
 	warnings.simplefilter('ignore')
 	import h5py
