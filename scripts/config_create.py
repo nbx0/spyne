@@ -15,14 +15,14 @@ fastqs=glob('{}/**/*.fastq.gz'.format(searchDir), recursive=True)
 
 
 if len(argv) < 1:
-	exit('\n\tUSAGE: {} <samplesheet.csv> <machine>\n'.format(__file__))
+	exit('\n\tUSAGE: {} <samplesheet.csv> <machine> <runid>\n'.format(__file__))
 
 try:
-	machine = argv[2]
-except IndexError:
-	machine = 'testMachine'
+	machine,runid = argv[2:4]
+except (IndexError, ValueError):
+	machine,runid = 'testMachine','testRunID'
 
-data = {'machine':machine, 'irmamodule':'CoV-minion-long-reads', 'barcodes':{}}
+data = {'runid':runid, 'machine':machine, 'irmamodule':'CoV-minion-long-reads', 'barcodes':{}}
 
 def reverse_complement(seq):
     rev = {'A':'T','T':'A','C':'G','G':'C'}
