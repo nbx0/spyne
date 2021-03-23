@@ -8,7 +8,7 @@ barcodes:
     cuid: N8KCQFO9
     experiment_id: test_E0211_nCoV-031121
     fastqs:
-    - /scicomp/home-pure/qgx6/CAWG_IRMA_pilot/on-premises-ont-assembly/tests/data/test.fastq.gz
+      - tests/data/test.fastq.gz
     flow_cell_id: FAP52730
     flow_cell_product_code: FLO-MIN106
     kit: LSK-109
