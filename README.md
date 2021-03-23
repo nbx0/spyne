@@ -10,7 +10,6 @@ Snakemake workflow specifically for ONT data processing with CDC-specific infras
 4. confirm successful assembly and prepare for Hadoop upload
 
 
-
 ## Working Environment
 These 2 steps must be done to use this workflow:
 ```
@@ -65,6 +64,12 @@ rm -v ${SARS2_ONT_HOME}.anaconda3/env/slither/bin/LABEL_RES/scripts/*{FastTreeMP
 # align2model,hmmscore,modelfromalign all within sam3.5 need'to find online
 mamba install blat minimap2 parallel pigz samtools fasttree muscle shogun -y
 $ -->
+
+### Run a Test Example (within this repository)
+```
+cd on-premises-ont-assembly
+snakemake -s workflow/Snakefile --cores 6 --printshellcmds --configfile tests/config.yaml
+```
 
 
 #### Dependencies
