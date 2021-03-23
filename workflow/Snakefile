@@ -22,7 +22,7 @@ rule gather_fastqs:
     output:
         "IRMA/{barcode}.fastq",
     shell:
-        "zcat guppy*/*/{wildcards.barcode}/*.fastq.gz > {output}"
+        "zcat ./tests/data/*.fastq.gz > {output}" #relative to on-premisis-ONT-assembly for testing
 
 
 rule barcode_trim_l:
@@ -51,9 +51,9 @@ rule barcode_trim_r:
         "IRMA/{barcode}_bartrim_l.fastq",
     output:
         "IRMA/{barcode}_bartrim_lr.fastq",
-    log:
-        out = ".{barcode}.bbduk.trim_right.stdout"
-        err = ".{barcode}.bbduk.trim_right.stderr"
+    log:".{barcode}.bbduk.trim_right.stdout"
+        #out = ".{barcode}.bbduk.trim_right.stdout"
+        #err = ".{barcode}.bbduk.trim_right.stderr"
     group:
         "trim-map"
     shell:
@@ -126,7 +126,7 @@ rule pass_negatives:
         "IRMA_negative/{barcode}",
     shell:
         "touch {output}"
-
+'''
 
 rule align2ref:
     input:
@@ -200,7 +200,7 @@ rule bamindex:
         samtools view -bS {input} | samtools sort > {output}
         samtools index {output}
         """
-
+'''
 
 rule irmaroundup:
     input:
