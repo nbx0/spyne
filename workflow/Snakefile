@@ -13,68 +13,63 @@ workdir: "."
 
 rule all:
     input:
-        expand("{barcode}.fin", barcode=config["barcodes"].keys()),
+        expand("{barcode}.fin", barcode=config["barcodes"].keys())
 
 
 rule gather_fastqs:
     input:
-        fastqs=lambda wildcards: config["barcodes"][wildcards.barcode]["fastqs"],
+        fastqs=lambda wildcards: config["barcodes"][wildcards.barcode]["fastqs"]
     output:
-        "IRMA/{barcode}.fastq",
+        "IRMA/{barcode}.fastq"
     shell:
-        "zcat ./tests/data/*.fastq.gz > {output}" #relative to on-premisis-ONT-assembly for testing
+        "zcat ./tests/data/*.fastq.gz > {output}"
 
 
 rule barcode_trim_l:
     input:
-        "IRMA/{barcode}.fastq",
+        "IRMA/{barcode}.fastq"
     output:
-        "IRMA/{barcode}_bartrim_l.fastq",
+        "IRMA/{barcode}_bartrim_l.fastq"
     log: ".{barcode}.bbduk.trim_left.stdout_and_stderr"
     group:
         "trim-map"
+    params:
+        bbdukParams = lambda wildcards: ' '.join(['ktrim=l',
+        'hdist=3',
+        'literal='+config['barcodes'][wildcards.barcode]['barcode_sequence'],
+        'k=17',
+        'qin=33',
+        'rcomp=f'])
     shell:
-        "bbduk.sh"
-        " in={input}"
-        " out={output}"
-        " hdist=3"
-        " literal={config['barcodes'][wildcards.barcode]['barcode_sequence']}"
-        " ktrim=l"
-        " k=17"
-        " qin=33"
-        " rcomp=f"
-        " &> {log}"
-
+        'bbduk.sh in={input} out={output} {params.bbdukParams} &> {log}'
 
 rule barcode_trim_r:
     input:
-        "IRMA/{barcode}_bartrim_l.fastq",
+        "IRMA/{barcode}_bartrim_l.fastq"
     output:
-        "IRMA/{barcode}_bartrim_lr.fastq",
-    log:".{barcode}.bbduk.trim_right.stdout"
-        #out = ".{barcode}.bbduk.trim_right.stdout"
+        "IRMA/{barcode}_bartrim_lr.fastq"
+    log:
+        #out = ".{barcode}.bbduk.trim_right.stdout",
         #err = ".{barcode}.bbduk.trim_right.stderr"
+        ".{barcode}.bbduk.trim_right.stdout_and_stderr"
     group:
         "trim-map"
+    params:
+        bbdukParams = lambda wildcards: ' '.join(['ktrim=r',
+        'hdist=3',
+        'literal='+config['barcodes'][wildcards.barcode]['barcode_sequence_rc'],
+        'k=17',
+        'qin=33',
+        'rcomp=f'])
     shell:
-        "bbduk.sh"
-        " in={input}"
-        " out={output}"
-        " hdist=3"
-        " literal={config['barcodes'][wildcards.barcode]['barcode_sequence_rc']}"
-        " ktrim=r"
-        " k=17"
-        " qin=33"
-        " rcomp=f"
-        " 1> {log.out}"
-        " 2> {log.err}"
+        'bbduk.sh in={input} out={output} {params.bbdukParams} &> {log}'
 
 
 rule cutadapt:
     input:
-        "IRMA/{barcode}_bartrim_lr.fastq",
+        "IRMA/{barcode}_bartrim_lr.fastq"
     output:
-        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq",
+        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
     group:
         "trim-map"
     # conda:
@@ -85,9 +80,9 @@ rule cutadapt:
 
 rule irma:
     input:
-        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq",
+        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
     output:
-        temp(touch("IRMA/{barcode}.irma.fin")),
+        temp(touch("IRMA/{barcode}.irma.fin"))
     group:
         "trim-map"
     threads: 16
@@ -102,9 +97,9 @@ rule irma:
 # and then reevaluates the needed DAG for each sample.
 checkpoint checkirma:
     input:
-        ancient("IRMA/{barcode}.irma.fin"),
+        ancient("IRMA/{barcode}.irma.fin")
     output:
-        temp("IRMA/{barcode}.irma.decision"),
+        temp("IRMA/{barcode}.irma.decision")
     shell:
         "[[ -f IRMA/{wildcards.barcode}/SARS-CoV-2.bam ]] &&"
         " echo passed > {output} ||"
@@ -121,9 +116,9 @@ def passed_irma(wildcards):
 
 rule pass_negatives:
     input:
-        ancient("IRMA/{barcode}.irma.decision"),
+        ancient("IRMA/{barcode}.irma.decision")
     output:
-        "IRMA_negative/{barcode}",
+        "IRMA_negative/{barcode}"
     shell:
         "touch {output}"
 '''
@@ -204,8 +199,8 @@ rule bamindex:
 
 rule irmaroundup:
     input:
-        passed_irma,
+        passed_irma
     output:
-        temp("{barcode}.fin"),
+        temp("{barcode}.fin")
     shell:
         "touch {output}"
