@@ -67,8 +67,12 @@ $ -->
 
 ### Run a Test Example (within this repository)
 ```
+# simplest example
 cd on-premises-ont-assembly
-snakemake -s workflow/Snakefile --cores 6 --printshellcmds --configfile tests/config.yaml
+activate_slither
+snakemake -s workflow/Snakefile --cores 6 --printshellcmds
+# optionally use individual conda environments for each step
+snakemake -s workflow/Snakefile --cores 6 --printshellcmds --use-conda --conda-frontend mamba
 ```
 
 
