@@ -9,6 +9,7 @@ shell.executable("bash")
 
 
 workdir: "."
+configfile: "tests/config.yaml"
 
 
 rule all:
@@ -21,8 +22,9 @@ rule gather_fastqs:
         fastqs=lambda wildcards: config["barcodes"][wildcards.barcode]["fastqs"]
     output:
         "IRMA/{barcode}.fastq"
+    message: "Step 1 - merging all read files into a single file"
     shell:
-        "zcat ./tests/data/*.fastq.gz > {output}"
+        "zcat tests/data/*.fastq.gz > {output}"
 
 
 rule barcode_trim_l:
@@ -30,18 +32,31 @@ rule barcode_trim_l:
         "IRMA/{barcode}.fastq"
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
-    log: ".{barcode}.bbduk.trim_left.stdout_and_stderr"
+    log:
+        out=".{barcode}.bbduk.trim_left.stdout",
+        err=".{barcode}.bbduk.trim_left.stderr"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
     group:
         "trim-map"
-    params:
-        bbdukParams = lambda wildcards: ' '.join(['ktrim=l',
-        'hdist=3',
-        'literal='+config['barcodes'][wildcards.barcode]['barcode_sequence'],
-        'k=17',
-        'qin=33',
-        'rcomp=f'])
+    conda:
+        "envs/bbduk.yaml"
+    threads: 16
+    message: "Step 2 - trimming left barcode"
     shell:
-        'bbduk.sh in={input} out={output} {params.bbdukParams} &> {log}'
+        "bbduk.sh"
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=l"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
 
 rule barcode_trim_r:
     input:
@@ -49,20 +64,29 @@ rule barcode_trim_r:
     output:
         "IRMA/{barcode}_bartrim_lr.fastq"
     log:
-        #out = ".{barcode}.bbduk.trim_right.stdout",
-        #err = ".{barcode}.bbduk.trim_right.stderr"
-        ".{barcode}.bbduk.trim_right.stdout_and_stderr"
+        out=".{barcode}.bbduk.trim_right.stdout",
+        err=".{barcode}.bbduk.trim_right.stderr"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
     group:
         "trim-map"
-    params:
-        bbdukParams = lambda wildcards: ' '.join(['ktrim=r',
-        'hdist=3',
-        'literal='+config['barcodes'][wildcards.barcode]['barcode_sequence_rc'],
-        'k=17',
-        'qin=33',
-        'rcomp=f'])
+    conda:
+        "envs/bbduk.yaml"
+    threads: 16
+    message: "Step 3 - trimming right barcode"
     shell:
-        'bbduk.sh in={input} out={output} {params.bbdukParams} &> {log}'
+        "bbduk.sh"
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=r"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 
 rule cutadapt:
@@ -72,8 +96,9 @@ rule cutadapt:
         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
     group:
         "trim-map"
-    # conda:
-    #     "../envs/cutadaptenv.yaml"
+    conda:
+        "envs/cutadapt.yaml"
+    message: "Step 4 - clipping reads on both sides"
     shell:
         "cutadapt -u 30 -u -30 -o {output} {input}"
 
@@ -86,6 +111,7 @@ rule irma:
     group:
         "trim-map"
     threads: 16
+    message: "Step 5 - assembling genome"
     shell:
         "{workflow.basedir}/scripts/irmawrapper.sh"
         " {config[irmamodule]}"
@@ -125,11 +151,13 @@ rule pass_negatives:
 
 rule align2ref:
     input:
-        decision=ancient("IRMA/{barcode}.irma.decision"),
+        decision=ancient("IRMA/{barcode}.irma.decision")
     output:
-        "IRMA/{barcode}/aligned2ref.fasta",
+        "IRMA/{barcode}/aligned2ref.fasta"
     group:
         "index-irma-tablePositions2ref"
+    conda:
+        "envs/muscle.yaml"
     shell:
         "cat"
         " IRMA/{wildcards.barcode}/intermediate/0-ITERATIVE-REFERENCES/R0-SARS-CoV-2.ref"
@@ -139,9 +167,9 @@ rule align2ref:
 
 rule realignIrma_allAlleles:
     input:
-        ancient("IRMA/{barcode}/aligned2ref.fasta"),
+        ancient("IRMA/{barcode}/aligned2ref.fasta")
     output:
-        "IRMA/{barcode}/tables/SARS-CoV-2-allAlleles_realign.txt",
+        "IRMA/{barcode}/tables/SARS-CoV-2-allAlleles_realign.txt"
     group:
         "index-irma-tablePositions2ref"
     shell:
@@ -159,11 +187,13 @@ rule realignIrma_allAlleles:
 rule bam2fastq:
     input:
         decision=ancient("IRMA/{barcode}.irma.decision"),
-        bam=ancient("IRMA/{barcode}/SARS-CoV-2.bam"),
+        bam=ancient("IRMA/{barcode}/SARS-CoV-2.bam")
     output:
-        temp("IRMA/{barcode}/SARS-CoV-2.bam.fastq"),
+        temp("IRMA/{barcode}/SARS-CoV-2.bam.fastq")
     group:
         "realignbam"
+    conda:
+        "envs/samtools.yaml"
     shell:
         "samtools fastq {input.bam} > {output}"
 
@@ -173,23 +203,28 @@ rule minimap2:
         ref=ancient(
             "IRMA/{barcode}/intermediate/0-ITERATIVE-REFERENCES/R0-SARS-CoV-2.ref"
         ),
-        fq="IRMA/{barcode}/SARS-CoV-2.bam.fastq",
+        fq="IRMA/{barcode}/SARS-CoV-2.bam.fastq"
     output:
-        temp("IRMA/{barcode}/SARS-CoV-2.bam.mmp2.sam"),
+        temp("IRMA/{barcode}/SARS-CoV-2.bam.mmp2.sam")
     group:
         "realignbam"
+    conda:
+        "envs/minimap2.yaml"
+    threads: 16
     shell:
         # NOTE: default mm2 is 3 CPUs... dont we wanna expose numCPUs avail here?
-        "minimap2 -a {input.ref} {input.fq} > {output}"
+        "minimap2 -t {threads} -a {input.ref} {input.fq} > {output}"
 
 
 rule bamindex:
     input:
-        ancient("IRMA/{barcode}/SARS-CoV-2.bam.mmp2.sam"),
+        ancient("IRMA/{barcode}/SARS-CoV-2.bam.mmp2.sam")
     output:
-        "IRMA/{barcode}/SARS-CoV-2_realign_{barcode}.bam",
+        "IRMA/{barcode}/SARS-CoV-2_realign_{barcode}.bam"
     group:
         "realignbam"
+    conda:
+        "envs/samtools.yaml"
     shell:
         """
         samtools view -bS {input} | samtools sort > {output}
