@@ -8,7 +8,7 @@ barcodes:
     cuid: N8KCQFO9
     experiment_id: test_E0211_nCoV-031121
     fastqs:
-      - tests/data/test.fastq.gz
+      - tests/data/tiny-test.fastq.gz
     flow_cell_id: FAP52730
     flow_cell_product_code: FLO-MIN106
     kit: LSK-109
@@ -16,3 +16,4 @@ barcodes:
 irmamodule: CoV-minion-long-reads
 machine: testMachine
 runid: testRunID
+keep-going: True
