@@ -41,6 +41,7 @@ for d in dfd.values():
 									'csid':csid,
 									'cuid':cuid,
 									'artfactid':artifactid,
+									'Library':'swift',
 									'flow_cell_id':d['flow_cell_id'],
 									'flow_cell_product_code':d['flow_cell_product_code'],
 									'kit':d['kit'],
