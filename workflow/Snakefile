@@ -15,8 +15,14 @@ configfile: "tests/config.yaml"
 rule all:
     input:
         expand("{barcode}.fin", barcode=config["barcodes"].keys()),
-	ancient('IRMA/IRMA_reads2hadoop.fin'),
-	ancient('hadoop/amplicon2hadoop.fin')
+        expand("qa/{barcode}.png", barcode=config["barcodes"].keys()),
+        expand("qa/stats.{barcode}_left_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
+        expand("qa/stats.{barcode}_right_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
+        expand("qa/stats.{barcode}.cutadapt.tsv", barcode=config["barcodes"].keys()),
+        expand("qa/stats.{barcode}.subsample.tsv", barcode=config["barcodes"].keys()),
+        # expand("qa/{barcode}-assembly-stats.tsv", barcode=config["barcodes"].keys()),
+        ancient('IRMA/IRMA_reads2hadoop.fin'),
+        ancient('hadoop/amplicon2hadoop.fin')
 
 ruleorder: gather_fastqs > barcode_trim_left > barcode_trim_right > irma > amplicov
 
@@ -255,7 +261,12 @@ rule irma:
     threads: 16
     message: "Step 5 - assembling genome"
     shell:
-        '{workflow.basedir}/scripts/irmawrapper.sh {config[irmamodule]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
+        "{workflow.basedir}/scripts/irmawrapper.sh"
+        " {config[irmamodule]}"
+        " {input}"
+        " {wildcards.barcode}"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 
 rule quast:
@@ -315,6 +326,8 @@ rule irmareads2hadoop:
         "log/irma/irmareads2hadoop_all.log"
     benchmark:
         "log/benchmarks/irmareads2hadoop_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'python {workflow.basedir}/scripts/irmaBasicReadStats2hadoop.py -s {input} && touch {output}'
 
@@ -362,6 +375,8 @@ rule amplicov:
         "log/amplicov/{barcode}.log"
     benchmark:
         "log/benchmarks/amplicov_{barcode}.log"
+    conda:
+        "envs/hadoop.yaml"
     params:
         bedpe = lambda wildcards: primers[config["barcodes"][wildcards.barcode]["Library"]]["bedpe"]
     shell:
@@ -379,6 +394,8 @@ rule cat_amplicov:
         "log/amplicov/cat.log"
     benchmark:
         "log/benchmarks/catamplicov_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'hostname && python {workflow.basedir}/scripts/addColumns.py -f {input} -o {output} --sc2 2> {log} && touch {output} || touch {output}'
 
@@ -405,6 +422,8 @@ rule cat_allAlleles:
         "log/cat_irma/allAlleles.log"
     benchmark:
         "log/benchmarks/catallalleles_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt -o {output} --sc2 2> {log} || touch {output}'
 
@@ -417,6 +436,8 @@ rule cat_coverage:
         "log/cat_irma/coverage.log"
     benchmark:
         "log/benchmarks/catcoverage_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-coverage.pad.txt -o {output} --sc2 2> {log} || touch {output}'
 
@@ -430,6 +451,8 @@ rule cat_insertions:
         "log/cat_irma/insertions.log"
     benchmark:
         "log/benchmarks/catinsertions_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-insertions.txt -o {output} --sc2 2> {log} || touch {output}'
 
@@ -442,6 +465,8 @@ rule cat_deletions:
         "log/cat_irma/deletions.log"
     benchmark:
         "log/benchmarks/catdeletions_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} --sc2 2> {log} || touch {output}'
 
@@ -457,6 +482,8 @@ rule irmaConsensus2hadoop:
         "log/irmaConsensus2hadoop/all.log"
     benchmark:
         "log/benchmarks/irmaconsensus2hadoop_all.log"
+    conda:
+        "envs/hadoop.yaml"
     shell:
         'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irmamodule]} {config[machine]} {config[runid]}  2> {log}'
 
