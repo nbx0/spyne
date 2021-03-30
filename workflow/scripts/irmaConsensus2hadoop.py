@@ -10,7 +10,7 @@ from re import findall
 import yaml
 from datetime import datetime
 
-with open('config.yaml', 'r') as y:
+with open('tests/config.yaml', 'r') as y: #hard coded for testing
 	config = yaml.safe_load(y)
 
 try:
@@ -40,7 +40,7 @@ fastas = [i for i in glob('IRMA/*/amended_consensus/*pad.fa') if (not findall('[
 ribosome = '/'.join(realpath(__file__).split('/')[:-3])+'/dais-ribosome/ribosome'
 
 def findsampleid(filename, config):
-	for k in config['samples'].keys():
+	for k in config['barcodes'].keys():
 		if k in filename:
 			return k
 
@@ -52,7 +52,7 @@ for f in fastas:
 		d.readline()
 		sequence = d.readline().upper().strip()
 		sha =  sha1(sequence.encode()).hexdigest()
-		tmpFile.write('\t'.join([config['machine'], config['runid'], config['samples'][sampleid]['csid'], config['samples'][sampleid]['cuid'], sequence, sha, config['samples'][sampleid]['clarityid'], config['samples'][sampleid]['Artifactid'], datetime.now().strftime('%Y-%m-%d %H:%M:%S')])+'\n')
+		tmpFile.write('\t'.join([config['machine'], config['runid'], config['barcodes'][sampleid]['csid'], config['barcodes'][sampleid]['cuid'], sequence, sha, config['barcodes'][sampleid]['clarityid'], config['barcodes'][sampleid]['Artifactid'], datetime.now().strftime('%Y-%m-%d %H:%M:%S')])+'\n')
 		tmpFileDais.write('\t'.join([sha, 'SARS-CoV-2', sequence])+'\n')
 tmpFileDais.close()
 tmpFile.close()

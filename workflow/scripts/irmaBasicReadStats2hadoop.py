@@ -13,7 +13,7 @@ hput = dirname(dirname(realpath(__file__)))+'/ingest_scripts/hput'
 
 p = AP(description='''Given files containing <sampleID> in filename from the SC2 pipeline, collects basic IRMA read count data and loads hadoop''')
 r = p.add_argument_group('Required arguments')
-r.add_argument('-s', '--samples',  metavar='<sampleID.file ... ...>', nargs='+')
+r.add_argument('-s', '--barcodes',  metavar='<sampleID.file ... ...>', nargs='+')
 
 try:
 	args = p.parse_args()
@@ -21,18 +21,18 @@ except AttributeError:
 	p.print_help()
 	exit()
 
-with open('config.yaml', 'r') as y:
+with open('tests/config.yaml', 'r') as y: #hard-coded location for testing
 	config = yaml.safe_load(y)
 
 df = pd.DataFrame(columns=('machineid', 'runid', 'csid', 'cuid', 'totalreads', 
 				'readspassedqc', 'readsmatchingref', 'clarityid', 'artifactid'))
 
 def findsampleid(filename, config):
-	for k in config['samples'].keys():
+	for k in config['barcodes'].keys():
 		if k in filename:
 			return k
 
-for filename in args.samples:
+for filename in args.barcodes:
 	sampleid = findsampleid(filename, config)
 	totalreads, readspassedqc, readsmatchingref = 0, 0, 0
 	try:
@@ -48,16 +48,16 @@ for filename in args.samples:
 		pass
 	df = df.append({'machineid':config['machine'],
 				'runid':config['runid'],
-				'csid':config['samples'][sampleid]['csid'],
-				'cuid':config['samples'][sampleid]['cuid'],
+				'csid':config['barcodes'][sampleid]['csid'],
+				'cuid':config['barcodes'][sampleid]['cuid'],
 				'totalreads':totalreads,
 				'readspassedqc':readspassedqc,
 				'readsmatchingref':readsmatchingref,
-				'clarityid':config['samples'][sampleid]['clarityid'],
-				'artifactid':config['samples'][sampleid]['Artifactid']}, ignore_index=True)
+				'clarityid':config['barcodes'][sampleid]['clarityid'],
+				'artifactid':config['barcodes'][sampleid]['Artifactid']}, ignore_index=True)
 df.to_csv('hadoop/basicIrmaReadCounts.txt', sep='\t', index=False, header=False, mode='w')
 #run([hput, 'hadoop/basicIrmaReadCounts.txt', '/user/nbx0/sars_cov2/irmareadcounts/{}_{}.txt'.format(config['machine'], config['runid'])])		
-conn = connect(host=hadoopHost, port=hadoopPort, database=hadoopDB)
-dbc = conn.cursor()
-dbc.execute('refresh irmareadcounts')
+#conn = connect(host=hadoopHost, port=hadoopPort, database=hadoopDB)
+#dbc = conn.cursor()
+#dbc.execute('refresh irmareadcounts')
 

@@ -37,7 +37,7 @@ if not args.output_file:
 	exit()
 
 def findsampleid(filename, config):
-	for k in config['samples'].keys():
+	for k in config['barcodes'].keys():
 		if k in filename:
 			return k
 	if args.benchmark:
@@ -70,9 +70,9 @@ def findvalue(sampleid, field):
 	elif sampleid == 'all':
 		return 'all'
 	else:
-		return config['samples'][sampleid][field]
+		return config['barcodes'][sampleid][field]
 
-with open('config.yaml', 'r') as y:
+with open('tests/config.yaml', 'r') as y: #hard code for testing
 	config = yaml.safe_load(y)
 
 if args.benchmark:
@@ -98,12 +98,12 @@ else:
 		if args.sc2:
 			sampleid = findsampleid(f, config)
 			if sampleid != 'all':
-				df.insert(loc=0, column='CUID', value=config['samples'][sampleid]['cuid'])
-				df.insert(loc=0, column='CSID', value=config['samples'][sampleid]['csid'])
+				df.insert(loc=0, column='CUID', value=config['barcodes'][sampleid]['cuid'])
+				df.insert(loc=0, column='CSID', value=config['barcodes'][sampleid]['csid'])
 				df.insert(loc=0, column='RUNID', value=config['runid'])
 				df.insert(loc=0, column='MACHINEID', value=config['machine'])
-				df['clarityid'] = config['samples'][sampleid]['clarityid']
-				df['Artifactid'] = config['samples'][sampleid]['Artifactid']
+				df['clarityid'] = config['barcodes'][sampleid]['clarityid']
+				df['Artifactid'] = config['barcodes'][sampleid]['Artifactid']
 		for i in args.add_fields_left[::-1]:
 			df.insert(loc=0, column=i[0], value=i[1])
 		for i in args.add_fields_right:
