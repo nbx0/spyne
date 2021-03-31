@@ -15,14 +15,21 @@ configfile: "tests/config.yaml"
 rule all:
     input:
         expand("{barcode}.fin", barcode=config["barcodes"].keys()),
-        expand("qa/{barcode}.png", barcode=config["barcodes"].keys()),
-        expand("qa/stats.{barcode}_left_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
-        expand("qa/stats.{barcode}_right_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
-        expand("qa/stats.{barcode}.cutadapt.tsv", barcode=config["barcodes"].keys()),
-        expand("qa/stats.{barcode}.subsample.tsv", barcode=config["barcodes"].keys()),
+        # expand("IRMA/{barcode}.fastq", barcode=config["barcodes"].keys()),
+        # expand("log/{barcode}.bbduk.trim_left.stderr.log", barcode=config["barcodes"].keys()),
+        # expand("log/{barcode}.bbduk.trim_right.stderr.log", barcode=config["barcodes"].keys()),
+        # expand("log/{barcode}.cutadapt.stdout.log", barcode=config["barcodes"].keys()),
+        # expand("log/{barcode}.reformat.stderr.log", barcode=config["barcodes"].keys()),
+        # expand("qa/stats.{barcode}.subsample.tsv", barcode=config["barcodes"].keys()),
         # expand("qa/{barcode}-assembly-stats.tsv", barcode=config["barcodes"].keys()),
-        ancient('IRMA/IRMA_reads2hadoop.fin'),
-        ancient('hadoop/amplicon2hadoop.fin')
+        # expand("qa/{barcode}.png", barcode=config["barcodes"].keys()),
+        # expand("qa/stats.{barcode}_left_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
+        # expand("qa/stats.{barcode}_right_barcode_trimming.tsv", barcode=config["barcodes"].keys()),
+        # expand("qa/stats.{barcode}.cutadapt.tsv", barcode=config["barcodes"].keys()),
+        # expand("qa/stats.{barcode}.subsample.tsv", barcode=config["barcodes"].keys()),
+        # expand("qa/{barcode}-assembly-stats.tsv", barcode=config["barcodes"].keys()),
+        ancient("IRMA/IRMA_reads2hadoop.fin"),
+        ancient("hadoop/amplicon2hadoop.fin")
 
 ruleorder: gather_fastqs > barcode_trim_left > barcode_trim_right > irma > amplicov
 
@@ -38,26 +45,24 @@ rule gather_fastqs:
 
 rule plot_read_lengths:
     input:
-        "IRMA/{barcode}.fastq"
+        expand("IRMA/{barcode}.fastq", barcode=config["barcodes"].keys())
     output:
-        "qa/{barcode}.png"
+        "qa/{wildcards.barcode}.png"
     log:
-        out = "log/{barcode}.plot-read-lengths.stdout.log",
-        err = "log/{barcode}.plot-read-lengths.stderr.log"
-    group:
-        "trim-map"
+        out = "log/{wildcards.barcode}.plot-read-lengths.stdout.log",
+        err = "log/{wildcards.barcode}.plot-read-lengths.stderr.log"
     conda:
         "envs/plot.read-lengths.yaml"
-    threads: 16
+    threads: 2
     message: "Step X - plotting sequence read lengths"
-    script:
+    shell:
         "{workflow.basedir}/scripts/plot.read-lengths.py"
         " --indir IRMA"
-        " --prefix {barcode}"
+        " --prefix {wildcards.barcode}"
         " --cpus {threads}"
         " --outfile {output}"
         " --title 'Sample_ID and Experiment_ID'"
-        " --subtitle {barcode}"
+        " --subtitle {wildcards.barcode}"
         " 1> {log.out}"
         " 2> {log.err}"
 
@@ -95,7 +100,7 @@ rule barcode_trim_left:
 
 rule summarize_barcode_trim_left:
     input:
-        "log/{barcode}.bbduk.trim_left.stderr.log"
+        expand("log/{barcode}.bbduk.trim_left.stderr.log", barcode=config["barcodes"].keys())
     output:
         "qa/stats.{barcode}_left_barcode_trimming.tsv"
     group:
@@ -138,13 +143,13 @@ rule barcode_trim_right:
 
 rule summarize_barcode_trim_right:
     input:
-        "log/{barcode}.bbduk.trim_right.stderr.log"
+        expand("log/{barcode}.bbduk.trim_right.stderr.log", barcode=config["barcodes"].keys())
     output:
-        "qa/stats.{barcode}_right_barcode_trimming.tsv"
+        "qa/stats.{wildcards.barcode}_right_barcode_trimming.tsv"
     group:
         "trim-map"
     message: "Step X - summarizing right barcode trimming"
-    script:
+    shell:
         "scripts/grep_summarize_bbduk_log.sh {input} > {output}"
 
 
@@ -167,13 +172,13 @@ rule cutadapt:
 
 rule summarize_cutadapt:
     input:
-        "log/{barcode}.cutadapt.stdout.log"
+        expand("log/{barcode}.cutadapt.stdout.log", barcode=config["barcodes"].keys())
     output:
-        "qa/stats.{barcode}.cutadapt.tsv"
+        "qa/stats.{wildcards.barcode}.cutadapt.tsv"
     group:
         "trim-map"
     message: "Step X - summarizing cutadapt trimming"
-    script:
+    shell:
         """
         cnt_input_reads=$(grep '^Total reads' {input} | awk '{print $4}')
         cnt_input_bases=$(grep '^Total basepairs' {input} | awk '{print $4}' | sed 's/,//g')
@@ -228,13 +233,13 @@ rule subsample:
 
 rule summarize_subsample:
     input:
-        "log/{barcode}.reformat.stderr.log"
+        expand("log/{barcode}.reformat.stderr.log", barcode=config["barcodes"].keys())
     output:
-        "qa/stats.{barcode}.subsample.tsv"
+        "qa/stats.{wildcards.barcode}.subsample.tsv"
     group:
         "trim-map"
     message: "Step X - summarizing subsampling"
-    script:
+    shell:
         """
         cnt_input_reads=$(grep '^Input:' {input} | awk '{print $2}')
         cnt_input_bases=$(grep '^Input:' {input} | awk '{print $5}')
@@ -271,12 +276,12 @@ rule irma:
 
 rule quast:
     input:
-        "IRMA/{barcode}/SARS-CoV-2.fasta"
+        expand("IRMA/{barcode}/SARS-CoV-2.fasta", barcode=config["barcodes"].keys())
     output:
-        temp("qa/.tmp/{barcode}/transposed_report.tsv")
+        temp("qa/.tmp/{wildcards.barcode}/transposed_report.tsv")
     log:
-        out = "log/{barcode}.quast.stdout.log",
-        err = "log/{barcode}.quast.stderr.log"
+        out = "log/{wildcards.barcode}.quast.stdout.log",
+        err = "log/{wildcards.barcode}.quast.stderr.log"
     group:
         "trim-map"
     conda:
@@ -287,20 +292,23 @@ rule quast:
         "quast"
         " --fast"
         " --threads {threads}"
-        " --output-dir qa/.tmp/{barcode}"
+        " --output-dir qa/.tmp/{wildcards.barcode}"
         " {input}"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 
 rule report_assembly_statistics:
     input:
-        "qa/.tmp/{barcode}/transposed_report.tsv"
+        expand("qa/.tmp/{barcode}/transposed_report.tsv", barcode=config["barcodes"].keys())
     output:
-        "qa/{barcode}-assembly-stats.tsv"
+        "qa/{wildcards.barcode}-assembly-stats.tsv"
     group:
         "trim-map"
     message: "Step 5c - moving assembly metrics"
     shell:
         "mv {input} {output}"
+
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
@@ -309,10 +317,8 @@ checkpoint checkirma:
         ancient('IRMA/{barcode}.irma.fin')
     output:
         'IRMA/{barcode}.irma.decision'
-    log:
-        "log/irma/checkirma_{barcode}.log"
     shell:
-        "[[ -s IRMA/{wildcards.barcode}/SARS-CoV-2.bam ]] &&"
+        "[ -s IRMA/{wildcards.barcode}/SARS-CoV-2.bam ] &&"
         " echo passed > {output} ||"
         " echo failed > {output}"
 
@@ -323,13 +329,19 @@ rule irmareads2hadoop:
     output:
         temp('IRMA/IRMA_reads2hadoop.fin')
     log:
-        "log/irma/irmareads2hadoop_all.log"
+        out = "log/{wildcards.barcode}.irmareads2hadoop.stdout.log",
+        err = "log/{wildcards.barcode}.irmareads2hadoop.stderr.log"
     benchmark:
         "log/benchmarks/irmareads2hadoop_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'python {workflow.basedir}/scripts/irmaBasicReadStats2hadoop.py -s {input} && touch {output}'
+        "python {workflow.basedir}/scripts/irmaBasicReadStats2hadoop.py"
+        " -s {input}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " && touch {output}"
+
 
 def passed_irma(wildcards):
     with checkpoints.checkirma.get(barcode=wildcards.barcode).\
@@ -348,127 +360,215 @@ rule pass_negatives:
     shell:
         "touch {output}"
 
-rule bamsort:
+rule sort_bam:
     input:
-        'IRMA/{barcode}.irma.decision'
+        expand("IRMA/{barcode}.irma.decision", barcode=config["barcodes"].keys())
     output:
-        'IRMA/{barcode}_SARS-CoV-2_sorted.bam'
+        "IRMA/{wildcards.barcode}_SARS-CoV-2_sorted.bam"
     threads: 14
     group:
-        'amplicon-cov'
+        "amplicon-cov"
     log:
-        "log/bamsort/bamsort_{barcode}.log"
+        out = "log/{wildcards.barcode}.sort-bam.stdout.log",
+        err = "log/{wildcards.barcode}.sort-bam.stderr.log"
+    conda:
+        "envs/samtools.yaml"
     shell:
-        'hostname && /scicomp/home-pure/sars2seq/bin/samtools-1.11/samtools sort IRMA/{wildcards.barcode}/SARS-CoV-2.bam -o {output} --threads {threads} 2> {log} || touch {output}'
+        "hostname"
+        " && samtools sort"
+        " IRMA/{wildcards.barcode}/SARS-CoV-2.bam"
+        " -o {output}"
+        " --threads {threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " || touch {output}"
 
-#Set library primers and PCR Library files according to Library in config
-primers={'swift':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta'},'4pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta'},'articv3':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta'},'sgene_v1':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta'}}
+
+# Set library primers and PCR Library files according to Library in config
+primers = {
+    "swift": {
+        "bedpe": "/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe",
+        "fasta": "/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta",
+    },
+    "4pool": {
+        "bedpe": "/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe",
+        "fasta": "/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta",
+    },
+    "articv3": {
+        "bedpe": "/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe",
+        "fasta": "/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta",
+    },
+    "sgene_v1": {
+        "bedpe": "/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe",
+        "fasta": "/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta",
+    },
+}
+
 
 rule amplicov:
     input:
-        'IRMA/{barcode}_SARS-CoV-2_sorted.bam'
+        expand("IRMA/{barcode}_SARS-CoV-2_sorted.bam", barcode=config["barcodes"].keys())
     output:
-        'IRMA/{barcode}_amplicon_coverage.txt'
+        "IRMA/{wildcards.barcode}_amplicon_coverage.txt"
     group:
-        'amplicon-cov'
+        "amplicon-cov"
     log:
-        "log/amplicov/{barcode}.log"
+        out = "log/{wildcards.barcode}.amplicov.stdout.log",
+        err = "log/{wildcards.barcode}.amplicov.stderr.log"
     benchmark:
-        "log/benchmarks/amplicov_{barcode}.log"
+        "log/benchmarks/amplicov_{wildcards.barcode}.log"
     conda:
         "envs/hadoop.yaml"
     params:
         bedpe = lambda wildcards: primers[config["barcodes"][wildcards.barcode]["Library"]]["bedpe"]
     shell:
-        'hostname && [[ -f {input} ]] && python {workflow.basedir}/scripts/amplicov.py --bedpe {params.bedpe} --bam {input} -o IRMA -p {wildcards.barcode} 2> {log} && touch {output} || touch {output}'
+        "hostname"
+        " && [ -s {input} ]"
+        " && python {workflow.basedir}/scripts/amplicov.py"
+        " --bedpe {params.bedpe}"
+        " --bam {input}"
+        " -o IRMA"
+        " -p {wildcards.barcode}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " && touch {output}"
+        " || touch {output}"
 
 
 rule cat_amplicov:
     input:
-        expand('IRMA/{barcode}_amplicon_coverage.txt', barcode=config['barcodes'].keys())
+        expand("IRMA/{barcode}_amplicon_coverage.txt", barcode=config["barcodes"].keys())
     output:
-        'hadoop/all_amplicon_coverage.txt'
+        "hadoop/all_amplicon_coverage.txt"
     group:
-        'amplicov2hadoop'
+        "amplicov2hadoop"
     log:
-        "log/amplicov/cat.log"
+        out = "log/{wildcards.barcode}.catamplicov.stdout.log",
+        err = "log/{wildcards.barcode}.catamplicov.stderr.log"
     benchmark:
         "log/benchmarks/catamplicov_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f {input} -o {output} --sc2 2> {log} && touch {output} || touch {output}'
+        "hostname"
+        " && python"
+        " {workflow.basedir}/scripts/addColumns.py"
+        " -f {input}"
+        " -o {output}"
+        " --sc2"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " && touch {output}"
+        " || touch {output}"
+
 
 rule amplicov2hadoop:
     input:
-        'hadoop/all_amplicon_coverage.txt'
+        "hadoop/all_amplicon_coverage.txt"
     output:
-        'hadoop/amplicon2hadoop.fin'
+        "hadoop/amplicon2hadoop.fin"
     group:
-        'amplicon2hadoop'
+        "amplicon2hadoop"
     log:
-        'log/amplicov/hadoopload.log'
+        out = "log/hadoopload.stdout.log",
+        err = "log/hadoopload.stderr.log"
     benchmark:
         "log/benchmarks/amplicov2hadoop_all.log"
     shell:
-        'hostname && touch {output}' #add hput and himpala later
+        "hostname"
+        " && touch {output}" #add hput and himpala later
+
 
 rule cat_allAlleles:
     input:
-        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+        expand("IRMA/{barcode}.irma.decision", barcode=config["barcodes"].keys())
     output:
         "hadoop/all_allAlleles_realign.txt"
     log:
-        "log/cat_irma/allAlleles.log"
+        out = "log/catallalleles.stdout.log",
+        err = "log/catallalleles.stderr.log"
     benchmark:
         "log/benchmarks/catallalleles_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt -o {output} --sc2 2> {log} || touch {output}'
+        "hostname"
+        " && python {workflow.basedir}/scripts/addColumns.py"
+        " -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt"
+        " -o {output}"
+        " --sc2"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " || touch {output}"
+
 
 rule cat_coverage:
     input:
-        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+        expand("IRMA/{barcode}.irma.decision", barcode=config["barcodes"].keys())
     output:
-        'hadoop/all_coverage_realign.txt'
+        "hadoop/all_coverage_realign.txt"
     log:
-        "log/cat_irma/coverage.log"
+        out = "log/catcoverage.stdout.log",
+        err = "log/catcoverage.stderr.log"
     benchmark:
         "log/benchmarks/catcoverage_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-coverage.pad.txt -o {output} --sc2 2> {log} || touch {output}'
+        "hostname"
+        " && python {workflow.basedir}/scripts/addColumns.py"
+        " -f IRMA/*/tables/SARS-CoV-2-coverage.pad.txt"
+        " -o {output}"
+        " --sc2"
+        " 2> {log.out}"
+        " 2> {log.err}"
+        " || touch {output}"
 
 
 rule cat_insertions:
     input:
-        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+        expand("IRMA/{barcode}.irma.decision", barcode=config["barcodes"].keys())
     output:
-        'hadoop/all_insertions_realign.txt'
+        "hadoop/all_insertions_realign.txt"
     log:
-        "log/cat_irma/insertions.log"
+        out = "log/insertions.stdout.log",
+        err = "log/insertions.stderr.log"
     benchmark:
         "log/benchmarks/catinsertions_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-insertions.txt -o {output} --sc2 2> {log} || touch {output}'
+        "hostname"
+        " && python {workflow.basedir}/scripts/addColumns.py"
+        " -f IRMA/*/tables/SARS-CoV-2-insertions.txt"
+        " -o {output}"
+        " --sc2"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " || touch {output}"
+
 
 rule cat_deletions:
     input:
-        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+        expand("IRMA/{barcode}.irma.decision", barcode=config["barcodes"].keys())
     output:
-        'hadoop/all_deletions_realign.txt'
+        "hadoop/all_deletions_realign.txt"
     log:
-        "log/cat_irma/deletions.log"
+        out = "log/deletions.stdout.log",
+        err = "log/deletions.stderr.log"
     benchmark:
         "log/benchmarks/catdeletions_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} --sc2 2> {log} || touch {output}'
+        "python {workflow.basedir}/scripts/addColumns.py"
+        " -f IRMA/*/tables/SARS-CoV-2-deletions.txt"
+        " -o {output}"
+        " --sc2"
+        " 1> {log.out}"
+        " 2> {log.err}"
+        " || touch {output}"
+
 
 rule irmaConsensus2hadoop:
     input:
@@ -477,17 +577,25 @@ rule irmaConsensus2hadoop:
         "hadoop/all_deletions_realign.txt",
         "hadoop/all_insertions_realign.txt"
     output:
-        touch('hadoop/irmaConsensus2hadoop.fin')
+        touch("hadoop/irmaConsensus2hadoop.fin")
     log:
-        "log/irmaConsensus2hadoop/all.log"
+        out = "log/assembly-consensus2hadoop.stdout.log",
+        err = "log/assembly-consensus2hadoop.stderr.log"
     benchmark:
         "log/benchmarks/irmaconsensus2hadoop_all.log"
     conda:
         "envs/hadoop.yaml"
     shell:
-        'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irmamodule]} {config[machine]} {config[runid]}  2> {log}'
+        "export PERL5LIB=''"
+        " && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py"
+        " {config[irmamodule]}"
+        " {config[machine]}"
+        " {config[runid]}"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
-root='/'.join(workflow.basedir.split('/')[:-3])
+
+root = "/".join(workflow.basedir.split("/")[:-3])
 
 
 rule dais:
@@ -499,6 +607,7 @@ rule dais:
         'log/benchmarks/dais_all.log'
     shell:
         'echo dais' #add call later
+
 
 rule irmaroundup:
     input:
