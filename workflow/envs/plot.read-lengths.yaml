@@ -4,8 +4,8 @@ channels:
   - defaults
 
 dependencies:
-  - biopython=1.68
-  - matplotlib=2.0.0
-  - numpy=1.12.1
-  - seaborn=0.7.1
-  - python=2.7.12
+  - biopython
+  - matplotlib
+  - numpy
+  - seaborn
+  - python=2.7.14
