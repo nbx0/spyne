@@ -1,2 +1,2 @@
-flow_cell_id,flow_cell_product_code,kit,sample_id,experiment_id,barcode,alias,Experiment_id,Sample_id,Flow_cell_id,CSID,CUID,Artifact_id,Clarity_id,Flow_cell_product_code,Kit,Library
+flow_cell_id,flow_cell_product_code,kit,sample_id,experiment_id,barcode,alias,Minknow_experiment_name,Minknow_sample_id,Flow_cell_id,CSID,CUID,Artifact_id,Clarity_id,Flow_cell_product_code,Kit,Library
 FAP52730,FLO-MIN106,LSK-109,no-sample,test_E0211_nCoV-031121,barcode48,WOR11751A7665_3002351841_N8KCQFO9_2-3981747,test_E0211_nCoV-031121,no_sample,FAP52730,3002351841,N8KCQFO9,2-3981747,WOR11751A7665,FLO-MIN106,LSK-109,swift
