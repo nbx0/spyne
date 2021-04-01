@@ -1,6 +1,6 @@
 barcodes:
   barcode48:
-    minknow_experiment_id: test_E0211_nCoV-031121
+    minknow_experiment_name: test_E0211_nCoV-031121
     minknow_sample_id: no_sample
     flow_cell_id: FAP52730
     csid: '3002351841'
