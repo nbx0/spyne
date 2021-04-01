@@ -1,7 +1,7 @@
 barcodes:
   barcode48:
-    experiment_id: test_E0211_nCoV-031121
-    sample_id: no_sample
+    minknow_experiment_id: test_E0211_nCoV-031121
+    minknow_sample_id: no_sample
     flow_cell_id: FAP52730
     csid: '3002351841'
     cuid: N8KCQFO9
@@ -14,7 +14,7 @@ barcodes:
     barcode_sequence_rc: TACAGGTGTACCACGTTCCAGATG
     fastqs:
       - tests/data/tiny-test.fastq.gz
-irmamodule: CoV-minion-long-reads
+irma_module: CoV-minion-long-reads
 machine: testMachine
 runid: testRunID
 keep-going: True
