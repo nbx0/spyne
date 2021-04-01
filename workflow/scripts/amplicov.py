@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-import os, errno, sys
+
+
 import argparse as ap
-import numpy as np
-import csv
+import errno
+import os
 import subprocess
-import plotly.graph_objects as go
-from pathlib import Path
-import pysam
+import sys
 from collections import defaultdict
+from pathlib import Path
+
+import numpy as np
+import plotly.graph_objects as go
+import pysam
+
 
 class SmartFormatter(ap.HelpFormatter):
     def _split_lines(self, text, width):
