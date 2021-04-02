@@ -1,4 +1,19 @@
 barcodes:
+  barcode24:
+    minknow_experiment_name: test_E0211_nCoV-031121
+    minknow_sample_id: no_sample
+    flow_cell_id: FAP59999
+    csid: '3009999999'
+    cuid: N9ZZZZZ9
+    artifact_id: 2-9999999
+    clarity_id: WOR19999A9999
+    flow_cell_product_code: FLO-MIN106
+    kit: LSK-109
+    library: swift
+    barcode_sequence: CTAACCCATCATGCAGAACTATGC
+    barcode_sequence_rc: GCATAGTTCTGCATGATGGGTTAG
+    fastqs:
+      - tests/data/tiny-test.fastq.gz
   barcode48:
     minknow_experiment_name: test_E0211_nCoV-031121
     minknow_sample_id: no_sample
