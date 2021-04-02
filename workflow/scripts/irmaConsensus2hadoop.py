@@ -33,7 +33,7 @@ hadoopHost = 'flu-hadoop-05.biotech.cdc.gov'
 hadoopPort = 21050
 hadoopDB = 'sars_cov2'
 
-hput = dirname(dirname(realpath(__file__)))+'/ingest_scripts/hput'
+hput = dirname(dirname(realpath(__file__)))+'/scripts/hput'
 
 fastas = [i for i in glob('IRMA/*/amended_consensus/*pad.fa') if (not findall('[-_]V[0-9]',i) and getsize(i) >= 100) ]
 
@@ -57,7 +57,7 @@ for f in fastas:
 tmpFileDais.close()
 tmpFile.close()
 
-#run([hput, tmpFile.name, '/user/nbx0/sars_cov2/cdc_production_all/'])
+run([hput, tmpFile.name, '/user/nbx0/sars_cov2/cdc_production_all/'])
 
 #conn = connect(host=hadoopHost, port=hadoopPort, database=hadoopDB)
 #dbc = conn.cursor()

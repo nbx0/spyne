@@ -6,11 +6,11 @@ from sys import exit
 import yaml
 
 def parse_fields(s):
-	try:
-		h,v = s.split(',')
-		return(h,v)
-	except:
-		raise argparse.ArgumentTypeError("add_fields must be whitespace-seperated list of comma-seperated header,value")
+        try:
+                h,v = s.split(',')
+                return(h,v)
+        except:
+                raise argparse.ArgumentTypeError("add_fields must be whitespace-seperated list of comma-seperated header,value")
 
 
 p = AP(description='''Read in text data file(s) and append key-columns''')
@@ -28,88 +28,89 @@ p.add_argument('--sc2', action='store_true', default=False, help='Default=False.
 p.add_argument('--benchmark', action='store_true', default=False, help='Default=False. Extract benchmark process name from file/paths and prepend to data. Used for DVD\'s SC2 Genomic Analyses Pipeline')
 
 try:
-	args = p.parse_args()
+        args = p.parse_args()
 except AttributeError:
-	p.print_help()
-	exit()
+        p.print_help()
+        exit()
 if not args.output_file:
-	p.print_help()
-	exit()
+        p.print_help()
+        exit()
 
 def findsampleid(filename, config):
-	for k in config['barcodes'].keys():
-		if k in filename:
-			return k
-	if args.benchmark:
-		if '_all' in filename:
-			return 'all'
+        for k in config['barcodes'].keys():
+                if k in filename:
+                        return k
+        if args.benchmark:
+                if '_all' in filename:
+                        return 'all'
 
 def findbenchmarkprocess(filename):
-	for k in ['align2ref', 'amplicov', 'amplicov2hadoop', 'bamsort', 'bbduk', 
-			'bbdukstats2hadoop', 'catallalleles', 'catamplicov', 'catcoverage', 
-			'catdeletions', 'catinsertions', 'checkirma', 'finishup', 'irma', 
-			'irmaconsensus2hadoop', 'irmareads2hadoop', 'irmatables2hadoop', 
-			'realignallalleles', 'realigncoverage', 'realigndeletions', 
-			'realigninsertions', 'subsample']:
-		if k in filename:
-			return k
+        for k in ['align2ref', 'amplicov', 'amplicov2hadoop', 'bamsort', 'bbduk', 
+                        'bbdukstats2hadoop', 'catallalleles', 'catamplicov', 'catcoverage', 
+                        'catdeletions', 'catinsertions', 'checkirma', 'finishup', 'irma', 
+                        'irmaconsensus2hadoop', 'irmareads2hadoop', 'irmatables2hadoop', 
+                        'realignallalleles', 'realigncoverage', 'realigndeletions', 
+                        'realigninsertions', 'subsample']:
+                if k in filename:
+                        return k
 
 realfiles = []
 for f in args.input_files:
-	if isfile(f):
-		if stat(f).st_size != 0:
-			realfiles.append(f)
+        if isfile(f):
+                if stat(f).st_size != 0:
+                        realfiles.append(f)
 
 if isfile(args.output_file[0]):
-	print('removing {}'.format(args.output_file[0]))
-	remove(args.output_file[0])
+        print('removing {}'.format(args.output_file[0]))
+        remove(args.output_file[0])
 
 def findvalue(sampleid, field):
-	if field in ['machine', 'runid']:
-		return config[field]
-	elif sampleid == 'all':
-		return 'all'
-	else:
-		return config['barcodes'][sampleid][field]
+        if field in ['machine', 'runid']:
+                return config[field]
+        elif sampleid == 'all':
+                return 'all'
+        else:
+                return config['barcodes'][sampleid][field]
 
 with open('tests/config.yaml', 'r') as y: #hard code for testing
-	config = yaml.safe_load(y)
+        config = yaml.safe_load(y)
 
 if args.benchmark:
-	df = pd.read_csv(realfiles[0], sep=args.input_delimiter)
-	origCols = df.columns
-	df['sampleid'] = findsampleid(realfiles[0], config)
-	df['process'] = findbenchmarkprocess(realfiles[0])
-	for f in realfiles[1:]:
-		df2 = pd.read_csv(f, sep=args.input_delimiter)
-		df2['sampleid'] = findsampleid(f, config)
-		df2['process'] = findbenchmarkprocess(f)
-		df = pd.concat([df, df2])
-	for field in ['cuid', 'csid', 'runid', 'machine', 'clarityid', 'Artifactid']:
-		df[field] = df['sampleid'].apply(lambda x: findvalue(x, field))
-	df = df[['process', 'machine', 'runid', 'csid', 'cuid']+origCols.tolist()+['clarityid', 'Artifactid']]
-	if isfile(args.output_file[0]):	
-		df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=False, mode='a+')
-	else:
-		df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
-else:	
-	for f in realfiles:
-		df = pd.read_csv(f, sep=args.input_delimiter)
-		if args.sc2:
-			sampleid = findsampleid(f, config)
-			if sampleid != 'all':
-				df.insert(loc=0, column='CUID', value=config['barcodes'][sampleid]['cuid'])
-				df.insert(loc=0, column='CSID', value=config['barcodes'][sampleid]['csid'])
-				df.insert(loc=0, column='RUNID', value=config['runid'])
-				df.insert(loc=0, column='MACHINEID', value=config['machine'])
-				df['clarityid'] = config['barcodes'][sampleid]['clarityid']
-				df['Artifactid'] = config['barcodes'][sampleid]['Artifactid']
-		for i in args.add_fields_left[::-1]:
-			df.insert(loc=0, column=i[0], value=i[1])
-		for i in args.add_fields_right:
-			df[i[0]] = i[1]
-		if isfile(args.output_file[0]):
-			df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=False, mode='a+')
-		else:
-			df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
-			
+        df = pd.read_csv(realfiles[0], sep=args.input_delimiter)
+        origCols = df.columns
+        df['sampleid'] = findsampleid(realfiles[0], config)
+        df['process'] = findbenchmarkprocess(realfiles[0])
+        for f in realfiles[1:]:
+                df2 = pd.read_csv(f, sep=args.input_delimiter)
+                df2['sampleid'] = findsampleid(f, config)
+                df2['process'] = findbenchmarkprocess(f)
+                df = pd.concat([df, df2])
+        for field in ['cuid', 'csid', 'runid', 'machine', 'clarityid', 'Artifactid']:
+                df[field] = df['sampleid'].apply(lambda x: findvalue(x, field))
+        df = df[['process', 'machine', 'runid', 'csid', 'cuid']+origCols.tolist()+['clarityid', 'Artifactid']]
+        if isfile(args.output_file[0]): 
+                df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=False, mode='a+')
+        else:
+                df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
+else:   
+        for f in realfiles:
+                df = pd.read_csv(f, sep=args.input_delimiter)
+                if args.sc2:
+                        sampleid = findsampleid(f, config)
+                        print(sampleid)
+                        if sampleid != 'all':
+                                df.insert(loc=0, column='CUID', value=config['barcodes'][sampleid]['cuid'])
+                                df.insert(loc=0, column='CSID', value=config['barcodes'][sampleid]['csid'])
+                                df.insert(loc=0, column='RUNID', value=config['runid'])
+                                df.insert(loc=0, column='MACHINEID', value=config['machine'])
+                                df['clarityid'] = config['barcodes'][sampleid]['clarityid']
+                                df['Artifactid'] = config['barcodes'][sampleid]['Artifactid']
+                for i in args.add_fields_left[::-1]:
+                        df.insert(loc=0, column=i[0], value=i[1])
+                for i in args.add_fields_right:
+                        df[i[0]] = i[1]
+                if isfile(args.output_file[0]):
+                        df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=False, mode='a+')
+                else:
+                        df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
+                        

@@ -9,7 +9,7 @@ from os.path import dirname, realpath
 hadoopHost = 'flu-hadoop-05.biotech.cdc.gov'
 hadoopPort = 21050
 hadoopDB = 'sars_cov2'
-hput = dirname(dirname(realpath(__file__)))+'/ingest_scripts/hput'
+hput = dirname(dirname(realpath(__file__)))+'/scripts/hput'
 
 p = AP(description='''Given files containing <sampleID> in filename from the SC2 pipeline, collects basic IRMA read count data and loads hadoop''')
 r = p.add_argument_group('Required arguments')
@@ -56,7 +56,7 @@ for filename in args.barcodes:
 				'clarityid':config['barcodes'][sampleid]['clarityid'],
 				'artifactid':config['barcodes'][sampleid]['Artifactid']}, ignore_index=True)
 df.to_csv('hadoop/basicIrmaReadCounts.txt', sep='\t', index=False, header=False, mode='w')
-#run([hput, 'hadoop/basicIrmaReadCounts.txt', '/user/nbx0/sars_cov2/irmareadcounts/{}_{}.txt'.format(config['machine'], config['runid'])])		
+run([hput, 'hadoop/basicIrmaReadCounts.txt', '/user/nbx0/sars_cov2/irmareadcounts/{}_{}.txt'.format(config['machine'], config['runid'])])		
 #conn = connect(host=hadoopHost, port=hadoopPort, database=hadoopDB)
 #dbc = conn.cursor()
 #dbc.execute('refresh irmareadcounts')
