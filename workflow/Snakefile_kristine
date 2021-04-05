@@ -14,7 +14,7 @@ configfile: "tests/config.yaml"
 
 rule all:
     input:
-        expand("{barcode}.fin", barcode=config["barcodes"].keys()),
+        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()),
 	ancient('IRMA/IRMA_reads2hadoop.fin'),
 	ancient('hadoop/amplicon2hadoop.fin'),
 	ancient('hadoop/irmaConsensus2hadoop.fin')
@@ -258,7 +258,7 @@ rule irma:
     threads: 16
     message: "Step 5 - assembling genome"
     shell:
-        '{workflow.basedir}/scripts/irmawrapper.sh {config[irmamodule]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
+        '{workflow.basedir}/scripts/irmawrapper.sh {config[irma_module]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
 
 
 rule quast:
@@ -461,7 +461,7 @@ rule irmaConsensus2hadoop:
     benchmark:
         "log/benchmarks/irmaconsensus2hadoop_all.log"
     shell:
-        'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irmamodule]} {config[machine]} {config[runid]}  2> {log}'
+        'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irma_module]} {config[machine]} {config[runid]}  2> {log}'
 
 #root='/'.join(workflow.basedir.split('/')[:-3])
 root='/scicomp/home-pure/sars2seq/prod'
@@ -476,10 +476,10 @@ rule dais:
     shell:
         '{root}/dais-ribosome/ribosome --module BETACORONAVIRUS hadoop/{config[runid]} hadoop/{config[runid]}.seq hadoop/{config[runid]}.ins hadoop/{config[runid]}.del hadoop/{config[runid]}.gen' #add call later
 
-rule irmaroundup:
+rule finishup:
     input:
         passed_irma
     output:
-        temp("{barcode}.fin")
+        temp("SC2.{barcode}.fin")
     shell:
         "touch {output}"
