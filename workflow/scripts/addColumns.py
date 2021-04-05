@@ -71,9 +71,9 @@ def findvalue(sampleid, field):
                 return 'all'
         else:
                 return config['barcodes'][sampleid][field]
-
-with open('tests/config.yaml', 'r') as y: #hard code for testing
-        config = yaml.safe_load(y)
+if args.sc2:
+        with open('tests/config.yaml', 'r') as y: #hard code for testing
+                config = yaml.safe_load(y)
 
 if args.benchmark:
         df = pd.read_csv(realfiles[0], sep=args.input_delimiter)
@@ -81,7 +81,7 @@ if args.benchmark:
         df['sampleid'] = findsampleid(realfiles[0], config)
         df['process'] = findbenchmarkprocess(realfiles[0])
         for f in realfiles[1:]:
-                df2 = pd.read_csv(f, sep=args.input_delimiter)
+                df2 = pd.read_csv(f, sep=args.input_delimiter, index_col=False)
                 df2['sampleid'] = findsampleid(f, config)
                 df2['process'] = findbenchmarkprocess(f)
                 df = pd.concat([df, df2])
@@ -94,7 +94,7 @@ if args.benchmark:
                 df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
 else:   
         for f in realfiles:
-                df = pd.read_csv(f, sep=args.input_delimiter)
+                df = pd.read_csv(f, sep=args.input_delimiter,index_col=False)
                 if args.sc2:
                         sampleid = findsampleid(f, config)
                         print(sampleid)
