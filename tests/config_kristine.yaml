@@ -1,0 +1,34 @@
+barcodes:
+  barcode48:
+    Library: swift
+    Artifactid: 2-3981747
+    barcode_sequence: CATCTGGAACGTGGTACACCTGTA
+    barcode_sequence_rc: TACAGGTGTACCACGTTCCAGATG
+    clarityid: WOR11751A7665
+    csid: '3002351841'
+    cuid: N8KCQFO9
+    minknow_experiment_id: test_E0211_nCoV-031121
+    fastqs:
+    - tests/data/tiny-test.fastq.gz
+    flow_cell_id: FAP52730
+    flow_cell_product_code: FLO-MIN106
+    kit: LSK-109
+    minknow_sample_id: no-sample
+  barcode24:
+    Library: swift
+    Artifactid: 2-3981748
+    barcode_sequence: CTAACCCATCATGCAGAACTATGC
+    barcode_sequence_rc: GCATAGTTCTGCATGATGGGTTAG
+    clarityid: WOR11751A7675
+    csid: '1234567890'
+    cuid: ABCD1234
+    minknow_experiment_id: test_E0211_nCov-031121
+    fastqs:
+    - tests/data/tiny-test.fastq.gz
+    flow_cell_id: FAP52730
+    flow_cell_product_code: FLO-MIN106
+    minknow_sample_id: no-sample
+irma_module: CoV-minion-long-reads
+machine: testMachine
+runid: testRunID
+keep-going: True
