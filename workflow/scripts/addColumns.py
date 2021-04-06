@@ -74,7 +74,7 @@ def findvalue(sampleid, field):
 if args.sc2:
         with open('tests/config.yaml', 'r') as y: #hard code for testing
                 config = yaml.safe_load(y)
-
+print(realfiles[0])
 if args.benchmark:
         df = pd.read_csv(realfiles[0], sep=args.input_delimiter)
         origCols = df.columns
@@ -94,10 +94,9 @@ if args.benchmark:
                 df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
 else:   
         for f in realfiles:
-                df = pd.read_csv(f, sep=args.input_delimiter,index_col=False)
+                df = pd.read_csv(f, sep='\s+',index_col=False)
                 if args.sc2:
                         sampleid = findsampleid(f, config)
-                        print(sampleid)
                         if sampleid != 'all':
                                 df.insert(loc=0, column='CUID', value=config['barcodes'][sampleid]['cuid'])
                                 df.insert(loc=0, column='CSID', value=config['barcodes'][sampleid]['csid'])
