@@ -16,8 +16,8 @@ except AttributeError:
 	p.print_help()
 	exit()
 
-hput = dirname(realpath(__file__))+'/hput'
-himpala = dirname(realpath(__file__))+'/himpala'
+hput = dirname(realpath(__file__))+'/scripts/hput'
+himpala = dirname(realpath(__file__))+'/scripts/himpala'
 
 with open(args.config[0], 'r') as y:
 	config = yaml.safe_load(y)
@@ -42,9 +42,9 @@ benchmark = hadoopDir+'/benchmarks.txt'
 
 def loadHadoop(file, table, hadoopfilename):
 	print('Loading {} to /user/nbx0/sars_cov2/{}/{}'.format(file, table, hadoopfilename))
-	run([hput, file, '/user/nbx0/sars_cov2/'+table+'/'+hadoopfilename])
+	#run([hput, file, '/user/nbx0/sars_cov2/'+table+'/'+hadoopfilename])
 	print('Refreshing {}'.format(table))
-	run([himpala, 'refresh {}'.format(table), 'sars_cov2'])
+	#run([himpala, 'refresh {}'.format(table), 'sars_cov2'])
 
 #loadHadoop(bbdukstats, 'primer_trimming', '{}_bbdukstats.txt'.format(config['runid']))
 loadHadoop(irmaReadStats, 'irmareadcounts', '{}_{}.txt'.format(config['machine'], config['runid']))
