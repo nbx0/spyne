@@ -474,7 +474,7 @@ rule cdc_config:
     benchmark:
         'logs/benchmarks/cdcconfig_all.log'
     shell:
-        'python {workflow.basedir}/config4hadoop.py'
+        'python scripts/config4hadoop.py'
 
 #root='/'.join(workflow.basedir.split('/')[:-3])
 root='/scicomp/home-pure/sars2seq/prod'
