@@ -464,12 +464,24 @@ rule irmaConsensus2hadoop:
     shell:
         'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irma_module]} {config[machine]} {config[runid]}  2> {log}'
 
+rule cdc_config:
+    input:
+        rules.irmaConsensus2hadoop.output
+    output:
+        touch('hadoop/parquet/config.fin')
+    log:
+        'logs/cdc_config/all.log'
+    benchmark:
+        'logs/benchmarks/cdcconfig_all.log'
+    shell:
+        'python {workflow.basedir}/config4hadoop.py'
+
 #root='/'.join(workflow.basedir.split('/')[:-3])
 root='/scicomp/home-pure/sars2seq/prod'
 
 rule dais:
     input:
-        rules.irmaConsensus2hadoop.output
+        rules.cdc_config.output
     output:
         touch('hadoop/dais.fin')
     benchmark:
