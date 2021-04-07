@@ -9,7 +9,7 @@ shell.executable("bash")
 
 
 workdir: "."
-configfile: "tests/config.yaml"
+configfile: "config.yaml"
 
 
 rule all:
@@ -21,21 +21,22 @@ rule all:
     shell:
         'python {workflow.basedir}/scripts/addColumns.py --sc2 --benchmark -o hadoop/benchmarks.txt -f log/benchmarks/* && python {workflow.basedir}/scripts/hadoopReloader.py -c tests/config.yaml -d hadoop'
 
-ruleorder: gather_fastqs > barcode_trim_left > barcode_trim_right > irma > amplicov
-
 rule gather_fastqs:
     input:
-        fastqs=lambda wildcards: config["barcodes"][wildcards.barcode]["fastqs"]
+        "config.yaml"
     output:
-        "IRMA/{barcode}.fastq"
+        "IRMA/cat_{barcode}.fastq"
+    params:
+        experiment_id = lambda wildcards: config["barcodes"][wildcards.barcode]["experiment_id"],
+        sample_id = lambda wildcards: config["barcodes"][wildcards.barcode]["sample_id"],
+        flow_cell_id = lambda wildcards: config["barcodes"][wildcards.barcode]["flow_cell_id"]
     message: "Step 1 - merging all read files into a single file"
     shell:
-        "zcat tests/data/tiny-test.fastq.gz > {output}"
-
+        "cat /scicomp/groups/Projects/SARS2Seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{wildcards.barcode}/{params.flow_cell_id}_pass_{wildcards.barcode}*.fastq > {output}"
 
 rule plot_read_lengths:
     input:
-        "IRMA/{barcode}.fastq"
+        "IRMA/cat_{barcode}.fastq"
     output:
         "qa/{barcode}.png"
     log:
@@ -61,7 +62,7 @@ rule plot_read_lengths:
 
 rule barcode_trim_left:
     input:
-        "IRMA/{barcode}.fastq"
+        "IRMA/cat_{barcode}.fastq"
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
     log:
@@ -409,7 +410,7 @@ rule cat_allAlleles:
     benchmark:
         "log/benchmarks/catallalleles_all.log"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt -o {output} --sc2 2> {log} || touch {output}'
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
 
 rule cat_coverage:
     input:
@@ -434,7 +435,7 @@ rule cat_insertions:
     benchmark:
         "log/benchmarks/catinsertions_all.log"
     shell:
-        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-insertions.txt -o {output} --sc2 2> {log} || touch {output}'
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-insertions.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
 
 rule cat_deletions:
     input:
@@ -446,7 +447,7 @@ rule cat_deletions:
     benchmark:
         "log/benchmarks/catdeletions_all.log"
     shell:
-        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} --sc2 2> {log} || touch {output}'
+        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
 
 rule irmaConsensus2hadoop:
     input:

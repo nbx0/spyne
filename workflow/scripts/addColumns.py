@@ -17,8 +17,8 @@ p = AP(description='''Read in text data file(s) and append key-columns''')
 r = p.add_argument_group('required arguments')
 r.add_argument('-f', '--input_files',  metavar='<inputFiles...>', nargs='+')
 r.add_argument('-o', '--output_file', nargs=1)
-p.add_argument('-n', '--input_delimiter', help='Default=\'\\t\'', nargs=1, default='\t')
-p.add_argument('-u', '--output_delimiter', help='Default=\'\\t\'', nargs=1, default='\t')
+p.add_argument('-n', '--input_delimiter', help='Default=\'\\t\'', nargs='?', default='\t')
+p.add_argument('-u', '--output_delimiter', help='Default=\'\\t\'', nargs='?', default='\t')
 p.add_argument('-l', '--add_fields_left', default=[], type=parse_fields, nargs='*',  metavar='<list of header,variable to create additional columns for inputFiles on the LEFT of the dataframe>')
 p.add_argument('-r', '--add_fields_right', default=[], type=parse_fields, nargs='*',  metavar='<list of header,variable to create additional columns for inputFiles on the RIGHT of the dataframe>')
 #p.add_argument('-p', '--prefix', help='Default=True', action='store_true', default=True)
@@ -72,7 +72,7 @@ def findvalue(sampleid, field):
         else:
                 return config['barcodes'][sampleid][field]
 if args.sc2:
-        with open('tests/config.yaml', 'r') as y: #hard code for testing
+        with open('config.yaml', 'r') as y: #hard code for testing
                 config = yaml.safe_load(y)
 print(realfiles[0])
 if args.benchmark:
@@ -94,7 +94,7 @@ if args.benchmark:
                 df.to_csv(args.output_file[0], sep=args.output_delimiter, index=False, header=args.header, mode='a+')
 else:   
         for f in realfiles:
-                df = pd.read_csv(f, sep='\s+',index_col=False)
+                df = pd.read_csv(f, sep=args.input_delimiter,index_col=False)
                 if args.sc2:
                         sampleid = findsampleid(f, config)
                         if sampleid != 'all':

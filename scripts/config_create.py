@@ -9,8 +9,8 @@ root = '/'.join(abspath(__file__).split('/')[:-2])
 
 ############### IN TESTING
 # FASTQ location is hardcoded here. Needs to be updated for production.
-searchDir = '/'.join(abspath(argv[1]).split('/')[:-1])
-fastqs=glob('{}/**/*.fastq.gz'.format(searchDir), recursive=True)
+#searchDir = '/'.join(abspath(argv[1]).split('/')[:-1])
+#fastqs=glob('{}/**/*.fastq.gz'.format(searchDir), recursive=True)
 ###################
 
 
@@ -22,7 +22,7 @@ try:
 except (IndexError, ValueError):
 	machine,runid = 'testMachine','testRunID'
 
-data = {'runid':runid, 'machine':machine, 'irmamodule':'CoV-minion-long-reads', 'barcodes':{}}
+data = {'runid':runid, 'machine':machine, 'irma_module':'CoV-minion-long-reads', 'barcodes':{}}
 
 def reverse_complement(seq):
     rev = {'A':'T','T':'A','C':'G','G':'C'}
@@ -41,15 +41,14 @@ for d in dfd.values():
 									'csid':csid,
 									'cuid':cuid,
 									'artifactid':artifactid,
-									'Library':'swift',
+									'Library':d['Library'],
 									'flow_cell_id':d['flow_cell_id'],
 									'flow_cell_product_code':d['flow_cell_product_code'],
 									'kit':d['kit'],
 									'sample_id':d['sample_id'],
 									'experiment_id':d['experiment_id'],
 									'barcode_sequence':barseqs[d['barcode']],
-									'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']]),
-									'fastqs':fastqs}
+									'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
 
 with open('config.yaml', 'w') as out:
 	yaml.dump(data, out, default_flow_style=False)
