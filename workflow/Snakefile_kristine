@@ -62,7 +62,7 @@ rule plot_read_lengths:
 
 rule barcode_trim_left:
     input:
-        "IRMA/cat_{barcode}.fastq"
+        ancient("IRMA/cat_{barcode}.fastq")
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
     log:
@@ -105,7 +105,7 @@ rule summarize_barcode_trim_left:
 
 rule barcode_trim_right:
     input:
-        "IRMA/{barcode}_bartrim_l.fastq"
+        ancient("IRMA/{barcode}_bartrim_l.fastq")
     output:
         "IRMA/{barcode}_bartrim_lr.fastq"
     log:
@@ -148,7 +148,7 @@ rule summarize_barcode_trim_right:
 
 rule cutadapt:
     input:
-        "IRMA/{barcode}_bartrim_lr.fastq"
+        ancient("IRMA/{barcode}_bartrim_lr.fastq")
     output:
         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
     log:
@@ -203,7 +203,7 @@ rule summarize_cutadapt:
 
 rule subsample:
     input:
-        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
     output:
         "IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq"
     log:
@@ -248,7 +248,7 @@ rule summarize_subsample:
 
 rule irma:
     input:
-        "IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq"
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq")
     output:
         touch("IRMA/{barcode}.irma.fin")
     log:
