@@ -40,7 +40,7 @@ for d in dfd.values():
 	data['barcodes'][d['barcode']] = {'clarityid':clarityid,
 									'csid':csid,
 									'cuid':cuid,
-									'artifactid':artifactid,
+									'Artifactid':artifactid,
 									'Library':d['Library'],
 									'flow_cell_id':d['flow_cell_id'],
 									'flow_cell_product_code':d['flow_cell_product_code'],
