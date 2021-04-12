@@ -34,31 +34,6 @@ rule gather_fastqs:
     shell:
         "cat /scicomp/groups/Projects/SARS2Seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{wildcards.barcode}/{params.flow_cell_id}_pass_{wildcards.barcode}*.fastq > {output}"
 
-rule plot_read_lengths:
-    input:
-        "IRMA/cat_{barcode}.fastq"
-    output:
-        "qa/{barcode}.png"
-    log:
-        out = "logs/{barcode}.plot-read-lengths.stdout.log",
-        err = "logs/{barcode}.plot-read-lengths.stderr.log"
-    group:
-        "trim-map"
-    conda:
-        "envs/plot.read-lengths.yaml"
-    threads: 16
-    message: "Step X - plotting sequence read lengths"
-    script:
-        "{workflow.basedir}/scripts/plot.read-lengths.py"
-        " --indir IRMA"
-        " --prefix {barcode}"
-        " --cpus {threads}"
-        " --outfile {output}"
-        " --title 'Sample_ID and Experiment_ID'"
-        " --subtitle {barcode}"
-        " 1> {log.out}"
-        " 2> {log.err}"
-
 
 rule barcode_trim_left:
     input:
@@ -90,17 +65,6 @@ rule barcode_trim_left:
         " 1> {log.out}"
         " 2> {log.err}"
 
-
-rule summarize_barcode_trim_left:
-    input:
-        "logs/{barcode}.bbduk.trim_left.stderr.log"
-    output:
-        "qa/stats.{barcode}_left_barcode_trimming.tsv"
-    group:
-        "trim-map"
-    message: "Step X - summarizing left barcode trimming"
-    shell:
-        "scripts/grep_summarize_bbduk_log.sh {input} > {output}"
 
 
 rule barcode_trim_right:
@@ -134,18 +98,6 @@ rule barcode_trim_right:
         " 2> {log.err}"
 
 
-rule summarize_barcode_trim_right:
-    input:
-        "logs/{barcode}.bbduk.trim_right.stderr.log"
-    output:
-        "qa/stats.{barcode}_right_barcode_trimming.tsv"
-    group:
-        "trim-map"
-    message: "Step X - summarizing right barcode trimming"
-    script:
-        "scripts/grep_summarize_bbduk_log.sh {input} > {output}"
-
-
 rule cutadapt:
     input:
         ancient("IRMA/{barcode}_bartrim_lr.fastq")
@@ -162,43 +114,6 @@ rule cutadapt:
     shell:
         "cutadapt -u 30 -u -30 -o {output} {input} 1> {log.out} 2> {log.err}"
 
-
-rule summarize_cutadapt:
-    input:
-        "logs/{barcode}.cutadapt.stdout.log"
-    output:
-        "qa/stats.{barcode}.cutadapt.tsv"
-    group:
-        "trim-map"
-    message: "Step X - summarizing cutadapt trimming"
-    script:
-        """
-        cnt_input_reads=$(grep '^Total reads' {input} | awk '{print $4}')
-        cnt_input_bases=$(grep '^Total basepairs' {input} | awk '{print $4}' | sed 's/,//g')
-        cnt_adapters=$(grep '^Reads with adapters:' {input} | awk '{print $4}' | sed 's/,//g')
-        cnt_output_reads=$(( "${cnt_input_reads}" - "${cnt_adapters}" ))
-        cnt_output_bases=$(grep '^Total written' {input} | awk '{print $4}' | sed 's/,//g')
-        nfo="${cnt_input_reads} input reads\t${cnt_input_bases} input bases\t"
-        nfo+="${cnt_output_reads} output reads \t${cnt_output_bases} output bases"
-        echo -e "${nfo}" > {output}
-        """
-
-
-# rule subsample:
-#     input:
-#         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
-#     output:
-#         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
-#     log:
-#         # out = "logs/{barcode}.seqtk.stdout.log",
-#         err = "logs/{barcode}.seqtk.stderr.log"
-#     group:
-#         "trim-map"
-#     conda:
-#         "envs/seqtk.yaml"
-#     message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
-#     shell:
-#         "seqtk sample -s608 {input} 1000000 1> {output} 2> {log.err}"
 
 
 rule subsample:
@@ -224,27 +139,6 @@ rule subsample:
         " 2> {log.err}"
 
 
-rule summarize_subsample:
-    input:
-        "logs/{barcode}.reformat.stderr.log"
-    output:
-        "qa/stats.{barcode}.subsample.tsv"
-    group:
-        "trim-map"
-    message: "Step X - summarizing subsampling"
-    script:
-        """
-        cnt_input_reads=$(grep '^Input:' {input} | awk '{print $2}')
-        cnt_input_bases=$(grep '^Input:' {input} | awk '{print $5}')
-        cnt_output_reads=$(grep '^Output:' {input} | awk '{print $2}')
-        cnt_output_bases=$(grep '^Output:' {input} | awk '{print $5}')
-        cnt_discarded_reads=$(( "${cnt_input_reads}" - "${cnt_output_reads}" ))
-        cnt_discarded_bases=$(( "${cnt_input_bases}" - "${cnt_output_bases}" ))
-        nfo="${cnt_discarded_reads} discarded reads\t"
-        nfo+="${cnt_discarded_bases} discarded bases"
-        echo -e "${nfo}" > {output}
-        """
-
 
 rule irma:
     input:
@@ -261,39 +155,6 @@ rule irma:
     shell:
         '{workflow.basedir}/scripts/irmawrapper.sh {config[irma_module]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
 
-
-rule quast:
-    input:
-        "IRMA/{barcode}/SARS-CoV-2.fasta"
-    output:
-        temp("qa/.tmp/{barcode}/transposed_report.tsv")
-    log:
-        out = "logs/{barcode}.quast.stdout.log",
-        err = "logs/{barcode}.quast.stderr.log"
-    group:
-        "trim-map"
-    conda:
-        "envs/quast.yaml"
-    threads: 16
-    message: "Step 5b - calculating assembly metrics"
-    shell:
-        "quast"
-        " --fast"
-        " --threads {threads}"
-        " --output-dir qa/.tmp/{barcode}"
-        " {input}"
-
-
-rule report_assembly_statistics:
-    input:
-        "qa/.tmp/{barcode}/transposed_report.tsv"
-    output:
-        "qa/{barcode}-assembly-stats.tsv"
-    group:
-        "trim-map"
-    message: "Step 5c - moving assembly metrics"
-    shell:
-        "mv {input} {output}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
