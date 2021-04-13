@@ -21,4 +21,4 @@ spath=/scicomp/home-pure/sars2seq/prod
 #  successful make the temp outdir visible to users
 PERL5LIB='' && \
  ${spath}/irma/IRMA "${irmaconfig}" "${read1}" "IRMA/_${samplename}" && \
- mv "IRMA/_${samplename}" "IRMA/${samplename}"
+ mv "IRMA/_${samplename}" "IRMA/${samplename}" && sleep 20
