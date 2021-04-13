@@ -150,7 +150,7 @@ rule irma:
         err = "logs/{barcode}.irma.stderr.log"
     group:
         "trim-map"
-    threads: 16
+    threads: 14
     message: "Step 5 - assembling genome"
     shell:
         '{workflow.basedir}/scripts/irmawrapper.sh {config[irma_module]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
