@@ -148,6 +148,8 @@ rule irma:
     log:
         out = "logs/{barcode}.irma.stdout.log",
         err = "logs/{barcode}.irma.stderr.log"
+    benchmark:
+        "logs/benchmarks/irma_{sample}.log"
     group:
         "trim-map"
     threads: 14
