@@ -133,7 +133,7 @@ rule subsample:
         "/apps/x86_64/bbmap/38.84/reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=100"
+        " samplereadstarget=1000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
