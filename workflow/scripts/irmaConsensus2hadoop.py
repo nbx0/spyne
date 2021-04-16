@@ -10,7 +10,7 @@ from re import findall
 import yaml
 from datetime import datetime
 
-with open('tests/config.yaml', 'r') as y: #hard coded for testing
+with open('config.yaml', 'r') as y: #hard coded for testing
         config = yaml.safe_load(y)
 
 try:

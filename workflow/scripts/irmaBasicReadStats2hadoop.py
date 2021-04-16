@@ -21,7 +21,7 @@ except AttributeError:
 	p.print_help()
 	exit()
 
-with open('tests/config.yaml', 'r') as y: #hard-coded location for testing
+with open('config.yaml', 'r') as y: #hard-coded location for testing
 	config = yaml.safe_load(y)
 
 df = pd.DataFrame(columns=('machineid', 'runid', 'csid', 'cuid', 'totalreads', 
