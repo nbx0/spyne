@@ -16,8 +16,8 @@ except AttributeError:
 	p.print_help()
 	exit()
 
-hput = dirname(realpath(__file__))+'/scripts/hput'
-himpala = dirname(realpath(__file__))+'/scripts/himpala'
+hput = dirname(realpath(__file__))+'/hput'
+himpala = dirname(realpath(__file__))+'/himpala'
 
 with open(args.config[0], 'r') as y:
 	config = yaml.safe_load(y)
