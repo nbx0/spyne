@@ -19,7 +19,7 @@ rule all:
 	ancient('hadoop/amplicon2hadoop.fin'),
 	ancient('hadoop/irmaConsensus2hadoop.fin')
     shell:
-        'python {workflow.basedir}/scripts/addColumns.py --sc2 --benchmark -o hadoop/benchmarks.txt -f logs/benchmarks/* && python {workflow.basedir}/scripts/hadoopReloader.py -c tests/config.yaml -d hadoop'
+        'python {workflow.basedir}/scripts/addColumns.py --sc2 --benchmark -o hadoop/benchmarks.txt -f logs/benchmarks/* && python {workflow.basedir}/scripts/hadoopReloader.py -c config.yaml -d hadoop'
 
 rule gather_fastqs:
     input:
