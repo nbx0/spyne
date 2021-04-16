@@ -133,7 +133,7 @@ rule subsample:
         "/apps/x86_64/bbmap/38.84/reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=1000000"
+        " samplereadstarget=100"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
@@ -149,7 +149,7 @@ rule irma:
         out = "logs/{barcode}.irma.stdout.log",
         err = "logs/{barcode}.irma.stderr.log"
     benchmark:
-        "logs/benchmarks/irma_{sample}.log"
+        "logs/benchmarks/irma_{barcode}.log"
     group:
         "trim-map"
     threads: 14
