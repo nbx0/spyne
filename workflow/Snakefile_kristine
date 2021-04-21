@@ -133,7 +133,7 @@ rule subsample:
         "/apps/x86_64/bbmap/38.84/reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=1000"
+        " samplereadstarget=100000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
@@ -337,7 +337,7 @@ rule cdc_config:
     benchmark:
         'logs/benchmarks/cdcconfig_all.log'
     shell:
-        'JAVA_HOME=/scicomp/home-pure/nbx0/miniconda3/envs/snakemake && python {workflow.basedir}/scripts/config4hadoop.py'
+        'export SPARK_LOCAL_DIRS=/tmp && JAVA_HOME=/scicomp/home-pure/nbx0/miniconda3/envs/snakemake && python {workflow.basedir}/scripts/config4hadoop.py'
 
 #root='/'.join(workflow.basedir.split('/')[:-3])
 root='/scicomp/home-pure/sars2seq/prod'
