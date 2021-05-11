@@ -15,12 +15,12 @@ root = '/'.join(abspath(__file__).split('/')[:-2])
 
 
 if len(argv) < 1:
-	exit('\n\tUSAGE: {} <samplesheet.csv> <machine> <runid>\n'.format(__file__))
+        exit('\n\tUSAGE: {} <samplesheet.csv> <machine> <runid>\n'.format(__file__))
 
 try:
-	machine,runid = argv[2:4]
+        machine,runid = argv[2:4]
 except (IndexError, ValueError):
-	machine,runid = 'testMachine','testRunID'
+        machine,runid = 'testMachine','testRunID'
 
 data = {'runid':runid, 'machine':machine, 'irma_module':'CoV-minion-long-reads', 'barcodes':{}}
 
@@ -29,29 +29,40 @@ def reverse_complement(seq):
     seq = seq[::-1]
     return ''.join(rev[i] for i in seq)
 
+def clarityid_csid_cuid_control(samplesheet_sample_id):
+        controls = ['ntc', 'control', 'hec','isolate_rna', 'pcr', 'water']
+        if True in [True for i in controls if i in samplesheet_sample_id.lower()]:
+                #if '-' in samplesheet_sample_id:
+                return samplesheet_sample_id.split('_')[0], 'control', '_'.join(samplesheet_sample_id.split('_')[1:-2]), samplesheet_sample_id.split('_')[-1]
+                #else:
+                #        return samplesheet_sample_id.split('_')[0], 'control', '_'.join(samplesheet_sample_id.split('_')[1:])
+        else:
+                return samplesheet_sample_id.split('_')[0:4444]
+
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
 #print(dfd)
 with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
-	barseqs = yaml.safe_load(y)
+        barseqs = yaml.safe_load(y)
 
 for d in dfd.values():
-	clarityid, csid, cuid, artifactid = d['alias'].split('_')
-	data['barcodes'][d['alias']] = {'clarityid':clarityid,
-									'csid':csid,
-									'cuid':cuid,
-									'Artifactid':artifactid,
-									'Library':d['Library'],
-									'flow_cell_id':d['flow_cell_id'],
-									'flow_cell_product_code':d['flow_cell_product_code'],
-									'kit':d['kit'],
-									'sample_id':d['sample_id'],
-									'experiment_id':d['experiment_id'],
+        print(d)
+        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
+        data['barcodes'][d['alias']] = {'clarityid':clarityid,
+                                                                        'csid':csid,
+                                                                        'cuid':cuid,
+                                                                        'Artifactid':artifactid,
+                                                                        'Library':d['Library'],
+                                                                        'flow_cell_id':d['flow_cell_id'],
+                                                                        'flow_cell_product_code':d['flow_cell_product_code'],
+                                                                        'kit':d['kit'],
+                                                                        'sample_id':d['sample_id'],
+                                                                        'experiment_id':d['experiment_id'],
                                                                         'barcode_number':d['barcode'],
-									'barcode_sequence':barseqs[d['barcode']],
-									'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
+                                                                        'barcode_sequence':barseqs[d['barcode']],
+                                                                        'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
 
 with open('config.yaml', 'w') as out:
-	yaml.dump(data, out, default_flow_style=False)
+        yaml.dump(data, out, default_flow_style=False)
 
 
