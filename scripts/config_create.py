@@ -31,7 +31,7 @@ def reverse_complement(seq):
 
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
-print(dfd)
+#print(dfd)
 with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
 	barseqs = yaml.safe_load(y)
 
