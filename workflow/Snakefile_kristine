@@ -30,10 +30,11 @@ rule gather_fastqs:
     params:
         experiment_id = lambda wildcards: config["barcodes"][wildcards.barcode]["experiment_id"],
         sample_id = lambda wildcards: config["barcodes"][wildcards.barcode]["sample_id"],
-        flow_cell_id = lambda wildcards: config["barcodes"][wildcards.barcode]["flow_cell_id"]
+        flow_cell_id = lambda wildcards: config["barcodes"][wildcards.barcode]["flow_cell_id"],
+        barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     message: "Step 1 - merging all read files into a single file"
     shell:
-        "cat /scicomp/home-pure/sars2seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{wildcards.barcode}/{params.flow_cell_id}_pass_{wildcards.barcode}*.fastq > {output}"
+        "cat /scicomp/home-pure/sars2seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{params.barcode_number}/{params.flow_cell_id}_pass_{params.barcode_number}*.fastq > {output}"
 
 
 rule barcode_trim_left:
