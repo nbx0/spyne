@@ -31,13 +31,13 @@ def reverse_complement(seq):
 
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
-#print(dfd)
+print(dfd)
 with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
 	barseqs = yaml.safe_load(y)
 
 for d in dfd.values():
 	clarityid, csid, cuid, artifactid = d['alias'].split('_')
-	data['barcodes'][d['barcode']] = {'clarityid':clarityid,
+	data['barcodes'][d['alias']] = {'clarityid':clarityid,
 									'csid':csid,
 									'cuid':cuid,
 									'Artifactid':artifactid,
@@ -47,6 +47,7 @@ for d in dfd.values():
 									'kit':d['kit'],
 									'sample_id':d['sample_id'],
 									'experiment_id':d['experiment_id'],
+                                                                        'barcode_number':d['barcode'],
 									'barcode_sequence':barseqs[d['barcode']],
 									'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
 
