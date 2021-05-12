@@ -25,7 +25,7 @@ except (IndexError, ValueError):
 data = {'runid':runid, 'machine':machine, 'irma_module':'CoV-minion-long-reads', 'barcodes':{}}
 
 def reverse_complement(seq):
-    rev = {'A':'T','T':'A','C':'G','G':'C'}
+    rev = {'A':'T','T':'A','C':'G','G':'C',',':','}
     seq = seq[::-1]
     return ''.join(rev[i] for i in seq)
 
@@ -44,9 +44,9 @@ dfd = df.to_dict('index')
 #print(dfd)
 with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
         barseqs = yaml.safe_load(y)
-
+#print(barseqs)
 for d in dfd.values():
-        print(d)
+        #print(d)
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
         data['barcodes'][d['alias']] = {'clarityid':clarityid,
                                                                         'csid':csid,
