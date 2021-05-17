@@ -70,4 +70,5 @@ with open('config.yaml', 'w') as out:
         yaml.dump(data, out, default_flow_style=False)
 
 if len(failures) > 1:
-    subprocess.call(["/scicomp/home-pure/qgx6/CAWG_IRMA_pilot/on-premises-ont-assembly/scripts/send_failures.sh","-i", failures, "-r", runid, "-a", "qgx6@cdc.gov,nbx0@cdc.gov"])
+    fail_script = root + '/scripts/send_failures.sh'
+    subprocess.call([fail_script,"-i", failures, "-r", runid, "-a", "qgx6@cdc.gov,nbx0@cdc.gov"])
