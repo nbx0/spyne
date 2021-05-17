@@ -3,9 +3,9 @@ from os.path import abspath
 from sys import argv, exit
 import pandas as pd
 from glob import glob
+import subprocess
 
 root = '/'.join(abspath(__file__).split('/')[:-2])
-
 
 ############### IN TESTING
 # FASTQ location is hardcoded here. Needs to be updated for production.
@@ -41,12 +41,12 @@ def clarityid_csid_cuid_control(samplesheet_sample_id):
 
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
-#print(dfd)
+failures = ''
 with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
         barseqs = yaml.safe_load(y)
-#print(barseqs)
 for d in dfd.values():
-        #print(d)
+    fastq_pass = glob('/scicomp/home-pure/sars2seq/data/by-instrument/'+ machine + '/' + runid + '/no_sample/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
+    if d['barcode'] in [x.split("/")[-2] for x in fastq_pass]:
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
         data['barcodes'][d['alias']] = {'clarityid':clarityid,
                                                                         'csid':csid,
@@ -61,8 +61,13 @@ for d in dfd.values():
                                                                         'barcode_number':d['barcode'],
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
+    else:
+        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
+        failures+=d['barcode']+','+csid+"_"+cuid+','+clarityid+'\\n'
+
 
 with open('config.yaml', 'w') as out:
         yaml.dump(data, out, default_flow_style=False)
 
-
+if len(failures) > 1:
+    subprocess.call(["/scicomp/home-pure/qgx6/CAWG_IRMA_pilot/on-premises-ont-assembly/scripts/send_failures.sh","-i", failures, "-r", runid, "-a", "qgx6@cdc.gov,nbx0@cdc.gov"])
