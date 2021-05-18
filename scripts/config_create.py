@@ -71,4 +71,4 @@ with open('config.yaml', 'w') as out:
 
 if len(failures) > 1:
     fail_script = root + '/scripts/send_failures.sh'
-    subprocess.call([fail_script,"-i", failures, "-r", runid, "-a", "qgx6@cdc.gov,nbx0@cdc.gov"])
+    subprocess.call([fail_script,"-i", failures, "-r", runid, "-a", "qgx6@cdc.gov,nbx0@cdc.gov,ylo1@cdc.gov,fep2@cdc.gov"])
