@@ -30,7 +30,7 @@ def reverse_complement(seq):
     return ''.join(rev[i] for i in seq)
 
 def clarityid_csid_cuid_control(samplesheet_sample_id):
-        controls = ['ntc', 'control', 'hec','isolate_rna', 'pcr', 'water']
+        controls = ['ntc', 'control', 'hec','isolate_rna', 'pcr', 'water','blank']
         if True in [True for i in controls if i in samplesheet_sample_id.lower()]:
                 #if '-' in samplesheet_sample_id:
                 return samplesheet_sample_id.split('_')[0], 'control', '_'.join(samplesheet_sample_id.split('_')[1:-2]), samplesheet_sample_id.split('_')[-1]
