@@ -42,13 +42,14 @@ def clarityid_csid_cuid_control(samplesheet_sample_id):
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
 failures = ''
-with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
+with open('{}/lib/{}.yaml'.format(root, dfd[0]['Barcode_expansion_pack']), 'r') as y:
         barseqs = yaml.safe_load(y)
+        print(barseqs)
 for d in dfd.values():
     fastq_pass = glob('/scicomp/home-pure/sars2seq/data/by-instrument/'+ machine + '/' + runid + '/no_sample/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
     if d['barcode'] in [x.split("/")[-2] for x in fastq_pass]:
-        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
-        data['barcodes'][d['alias']] = {'clarityid':clarityid,
+        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
+        data['barcodes'][d['Alias']] = {'clarityid':clarityid,
                                                                         'csid':csid,
                                                                         'cuid':cuid,
                                                                         'Artifactid':artifactid,
@@ -62,7 +63,7 @@ for d in dfd.values():
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
     else:
-        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['alias'])
+        clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
         failures+=d['barcode']+','+csid+"_"+cuid+','+clarityid+'\\n'
 
 
