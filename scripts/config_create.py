@@ -23,7 +23,7 @@ except (IndexError, ValueError):
         machine,runid = 'testMachine','testRunID'
 
 data = {'runid':runid, 'machine':machine, 'irma_module':'CoV-minion-long-reads', 'barcodes':{}}
-
+metadata = {}
 def reverse_complement(seq):
     rev = {'A':'T','T':'A','C':'G','G':'C',',':','}
     seq = seq[::-1]
@@ -42,9 +42,17 @@ def clarityid_csid_cuid_control(samplesheet_sample_id):
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
 failures = ''
-with open('{}/lib/{}.yaml'.format(root, dfd[0]['Barcode_expansion_pack']), 'r') as y:
+try:
+    with open('{}/lib/{}.yaml'.format(root, dfd[0]['Barcode_expansion_pack']), 'r') as y:
         barseqs = yaml.safe_load(y)
-        print(barseqs)
+        #print(barseqs)
+except:
+    with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
+        barseqs = yaml.safe_load(y)
+try:
+    plate = dfd[0]['Plate']
+except:
+    plate = 'NULL'
 for d in dfd.values():
     fastq_pass = glob('/scicomp/home-pure/sars2seq/data/by-instrument/'+ machine + '/' + runid + '/no_sample/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
     if d['barcode'] in [x.split("/")[-2] for x in fastq_pass]:
@@ -62,11 +70,18 @@ for d in dfd.values():
                                                                         'barcode_number':d['barcode'],
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
+        metadata[d['Alias']] = {'clarityid':clarityid,'csid':csid,'cuid':cuid, 'Lane':'1','Sample_ID':d['Alias'], 'Sample_Name':csid+'_'+cuid,'Sample_Plate':plate, 'Sample_Well':d['Sample_Well'], 'Sample_Project':'nanopore', 'index':'NULL', 'I7_Index_ID':d['barcode'],'index2':'NULL', 'I5_Index_ID':'NULL', 'Library':d['Library'],'Artifactid':artifactid,'Project':'nanopore'}
     else:
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
         failures+=d['barcode']+','+csid+"_"+cuid+','+clarityid+'\\n'
 
+#data['header'] = dict(dfd.Header)
+#data['samples'] = data['barcodes'][d['Alias']]
 
+metadataDF = pd.DataFrame(metadata).transpose()
+with open('samplesheet_metadata.csv', 'w') as out:
+        metadataDF.to_csv(out,sep='\t', index=False)
+#exit()
 with open('config.yaml', 'w') as out:
         yaml.dump(data, out, default_flow_style=False)
 
