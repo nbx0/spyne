@@ -26,7 +26,7 @@ rule gather_fastqs:
     input:
         "config.yaml"
     output:
-        "IRMA/cat_{barcode}.fastq"
+        "IRMA/cat_{barcode}.fastq.gz"
     params:
         experiment_id = lambda wildcards: config["barcodes"][wildcards.barcode]["experiment_id"],
         sample_id = lambda wildcards: config["barcodes"][wildcards.barcode]["sample_id"],
@@ -39,7 +39,7 @@ rule gather_fastqs:
 
 rule barcode_trim_left:
     input:
-        ancient("IRMA/cat_{barcode}.fastq")
+        ancient("IRMA/cat_{barcode}.fastq.gz")
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
     log:

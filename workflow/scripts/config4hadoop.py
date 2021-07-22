@@ -1,10 +1,12 @@
 import yaml
 from glob import glob
 from subprocess import run
-from os.path import dirname
+from os.path import realpath, dirname
+import pandas as pd
 
 spath = dirname(__file__)
 himpala = spath+'/himpala'
+hput = spath+'/hput'
 
 # snakemake config 2 dict
 with open('config.yaml','r') as d:
@@ -31,7 +33,26 @@ for i in ['machine','runid','creation_date','program_name','program_version','la
     if i not in irma_config.keys():
         irma_config[i] = 'Null'
 
-cmd = himpala+' "upsert into cdc_config values (\'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\'); refresh cdc_config;" sars_cov2'.format(
+irma_configDF = pd.DataFrame(irma_config, index=[0]).transpose()
+
+timestamp = creation_date.replace(" ","_").replace("-","").replace(":","")
+
+with open('hadoop/{}_{}_config.txt'.format(runid,timestamp), 'w') as out:
+    irma_configDF.to_csv(out,sep='\t',header=False,index=False)
+
+
+def loadHadoop(file, table, hadoopfilename=''):
+	if not isinstance(file, list):
+			file = [file]
+	for f in file:
+		if hadoopfilename == '':
+			hadoopfilename = f
+		print('Loading {} to /user/nbx0/sars_cov2/{}/{}'.format(f, table, hadoopfilename))
+		run([hput, f, '/user/nbx0/sars_cov2/'+table+'/'+hadoopfilename])
+
+loadHadoop('hadoop/{}_{}_config.txt'.format(runid,timestamp), 'cdc_config', '{}_{}_config.txt'.format(runid,timestamp))
+
+cmd = himpala+' "insert into cdc_config values (\'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\', \'{}\'); refresh cdc_config;" sars_cov2'.format(
 	irma_config['machine'] ,
 	irma_config['runid'] ,
 	irma_config['creation_date'] ,
