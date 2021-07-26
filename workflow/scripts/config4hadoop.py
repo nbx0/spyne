@@ -33,7 +33,7 @@ for i in ['machine','runid','creation_date','program_name','program_version','la
     if i not in irma_config.keys():
         irma_config[i] = 'Null'
 
-irma_configDF = pd.DataFrame(irma_config, index=[0]).transpose()
+irma_configDF = pd.DataFrame(irma_config, index=[0])
 
 timestamp = creation_date.replace(" ","_").replace("-","").replace(":","")
 

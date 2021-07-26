@@ -43,7 +43,7 @@ cdpFile=$(basename "$hFile")
 cdpTable=$(basename $(dirname "$hFile"))
 cdpHost="svc_dvd_clarity@cdp-client-01.biotech.cdc.gov"
 cdpCache=/groups/NCIRD/DVD/data/snakemake-cache
-scp "$lFile" "$cdpHost:$cdpCache/$cdpTable/$cdpFile" >/dev/null 2>&1 \
+scp -p "$lFile" "$cdpHost:$cdpCache/$cdpTable/$cdpFile" >/dev/null 2>&1 \
     && ssh "$cdpHost" "touch $cdpCache/$cdpTable/${cdpFile}.NEW" >/dev/null 2>&1 \
     || echo "SCP to CDP failed!" 1>&2
 
