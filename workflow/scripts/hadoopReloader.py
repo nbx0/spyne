@@ -31,6 +31,7 @@ irmaIns = hadoopDir+'/all_insertions_realign.txt'
 irmaDel = hadoopDir+'/all_deletions_realign.txt'
 irmaCov = hadoopDir+'/all_coverage_realign.txt'
 irmaAll = hadoopDir+'/all_allAlleles_realign.txt'
+irmaVar = hadoopDir+'/all_variants_realign.txt'
 irmaConsensus = glob(hadoopDir+'/*_consensus.txt')[0]
 daisIns = [i for i in glob(hadoopDir+'/*.ins') if 'gen' not in i][0]
 daisDel = [i for i in glob(hadoopDir+'/*.del') if 'gen' not in i][0]
@@ -50,6 +51,7 @@ def loadHadoop(file, table, hadoopfilename):
 loadHadoop(irmaReadStats, 'irmareadcounts', '{}_{}.txt'.format(config['machine'], config['runid']))
 loadHadoop(ampCov, 'amplicon_coverage', '{}_amplicon_coverage.txt'.format(config['runid']))
 loadHadoop(irmaIns, 'cdc_irma_insertions', '{}_insertions.txt'.format(config['runid']))
+loadHadoop(irmaVar, 'cdc_irma_variants', '{}_variants.txt'.format(config['runid']))
 loadHadoop(irmaDel, 'cdc_irma_deletions', '{}_deletions.txt'.format(config['runid']))
 loadHadoop(irmaCov, 'cdc_irma_coverage', '{}_coverage.txt'.format(config['runid']))
 loadHadoop(irmaAll, 'cdc_irma_allalleles', '{}_allalleles.txt'.format(config['runid']))

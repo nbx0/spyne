@@ -314,11 +314,24 @@ rule cat_deletions:
     shell:
         'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
 
+rule cat_variants:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_variants_realign.txt'
+    log:
+        "logs/cat_irma/all_variants_realign.txt"
+    benchmark:
+        "logs/benchmarks/catvariants_all.log"
+    shell:
+        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-variants.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
+
 rule irmaConsensus2hadoop:
     input:
         "hadoop/all_allAlleles_realign.txt",
         "hadoop/all_coverage_realign.txt",
         "hadoop/all_deletions_realign.txt",
+        "hadoop/all_variants_realign.txt",
         "hadoop/all_insertions_realign.txt"
     output:
         touch('hadoop/irmaConsensus2hadoop.fin')
