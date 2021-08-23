@@ -73,7 +73,8 @@ for d in dfd.values():
         metadata[d['Alias']] = {'clarityid':clarityid,'csid':csid,'cuid':cuid, 'Lane':'1','Sample_ID':d['Alias'], 'Sample_Name':csid+'_'+cuid,'Sample_Plate':plate, 'Sample_Well':d['Sample_Well'], 'Sample_Project':'nanopore', 'index':'NULL', 'I7_Index_ID':d['barcode'],'index2':'NULL', 'I5_Index_ID':'NULL', 'Library':d['Library'],'Artifactid':artifactid,'Project':'nanopore'}
     else:
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
-        failures+=d['barcode']+','+csid+"_"+cuid+','+clarityid+'\\n'
+        if 'control' not in csid.lower():
+            failures+=d['barcode']+','+csid+"_"+cuid+','+clarityid+'\\n'
 
 #data['header'] = dict(dfd.Header)
 #data['samples'] = data['barcodes'][d['Alias']]
