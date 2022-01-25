@@ -135,7 +135,7 @@ rule subsample:
         "/apps/x86_64/bbmap/38.84/reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=100000"
+        " samplereadstarget=1000000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
@@ -157,7 +157,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome"
     shell:
-        '{workflow.basedir}/scripts/irmawrapper.sh {config[irma_module]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
+        '{workflow.basedir}/scripts/irmawrapper.sh {config["barcodes"][wildcards.barcode]["irma_module"]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
 
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
@@ -340,7 +340,7 @@ rule irmaConsensus2hadoop:
     benchmark:
         "logs/benchmarks/irmaconsensus2hadoop_all.log"
     shell:
-        'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config[irma_module]} {config[machine]} {config[runid]}  2> {log}'
+        'export PERL5LIB= && python {workflow.basedir}/scripts/irmaConsensus2hadoop.py {config["barcodes"][wildcards.barcode]["irma_module"]} {config[machine]} {config[runid]}  2> {log}'
 
 rule cdc_config:
     input:

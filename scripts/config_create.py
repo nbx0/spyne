@@ -22,8 +22,9 @@ try:
 except (IndexError, ValueError):
         machine,runid = 'testMachine','testRunID'
 
-data = {'runid':runid, 'machine':machine, 'irma_module':'CoV-minion-long-reads', 'barcodes':{}}
+data = {'runid':runid, 'machine':machine, 'barcodes':{}}
 metadata = {}
+irma_dict = {'Spike-only':'CoV-s-gene','':'CoV-minion-long-reads','Whole-genome':'CoV-minion-long-reads'}
 def reverse_complement(seq):
     rev = {'A':'T','T':'A','C':'G','G':'C',',':','}
     seq = seq[::-1]
@@ -67,10 +68,15 @@ for d in dfd.values():
                                                                         'kit':d['kit'],
                                                                         'sample_id':d['sample_id'],
                                                                         'experiment_id':d['experiment_id'],
+                                                                        #'irma_module':irma_dict[d['Target']],
                                                                         'barcode_number':d['barcode'],
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
         metadata[d['Alias']] = {'clarityid':clarityid,'csid':csid,'cuid':cuid, 'Lane':'1','Sample_ID':d['Alias'], 'Sample_Name':csid+'_'+cuid,'Sample_Plate':plate, 'Sample_Well':d['Sample_Well'], 'Sample_Project':'nanopore', 'index':'NULL', 'I7_Index_ID':d['barcode'],'index2':'NULL', 'I5_Index_ID':'NULL', 'Library':d['Library'],'Artifactid':artifactid,'Project':'nanopore'}
+        try:
+            data['barcodes'][d['Alias']].update({'irma_module':irma_dict[d['Target']]})
+        except:
+            data['barcodes'][d['Alias']].update({'irma_module':'CoV-minion-long-reads'})
     else:
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
         if 'control' not in csid.lower():
