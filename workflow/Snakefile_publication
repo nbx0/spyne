@@ -1,0 +1,321 @@
+#!/usr/bin/env snakemake
+
+
+import os
+import sys
+
+
+shell.executable("bash")
+
+
+workdir: "."
+configfile: "config.yaml"
+
+localrules: cdc_config
+
+rule all:
+    input:
+        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys())
+    shell:
+        'python {workflow.basedir}/scripts/addColumns.py --sc2 --benchmark -o hadoop/benchmarks.txt -f logs/benchmarks/* && python {workflow.basedir}/scripts/hadoopReloader.py -c config.yaml -d hadoop'
+
+rule gather_fastqs:
+    input:
+        "config.yaml"
+    output:
+        "IRMA/cat_{barcode}.fastq.gz"
+    params:
+        experiment_id = lambda wildcards: config["barcodes"][wildcards.barcode]["experiment_id"],
+        sample_id = lambda wildcards: config["barcodes"][wildcards.barcode]["sample_id"],
+        flow_cell_id = lambda wildcards: config["barcodes"][wildcards.barcode]["flow_cell_id"],
+        barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
+    message: "Step 1 - merging all read files into a single file"
+    shell:
+        "cat /scicomp/home-pure/sars2seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{params.barcode_number}/*fastq* > {output}"
+
+
+rule barcode_trim_left:
+    input:
+        ancient("IRMA/cat_{barcode}.fastq.gz")
+    output:
+        "IRMA/{barcode}_bartrim_l.fastq"
+    log:
+        out = "logs/{barcode}.bbduk.trim_left.stdout.log",
+        err = "logs/{barcode}.bbduk.trim_left.stderr.log"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
+    group:
+        "trim-map"
+    # conda:
+    #     "envs/bbtools.yaml"
+    threads: 16
+    message: "Step 2 - trimming left barcode"
+    shell:
+        "/apps/x86_64/bbmap/38.84/bbduk.sh"
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=l"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+
+
+rule barcode_trim_right:
+    input:
+        ancient("IRMA/{barcode}_bartrim_l.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr.fastq"
+    log:
+        out = "logs/{barcode}.bbduk.trim_right.stdout.log",
+        err = "logs/{barcode}.bbduk.trim_right.stderr.log"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence_rc"]
+    group:
+        "trim-map"
+    # conda:
+    #     "envs/bbtools.yaml"
+    threads: 16
+    message: "Step 3 - trimming right barcode"
+    shell:
+        "/apps/x86_64/bbmap/38.84/bbduk.sh"
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=r"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+
+rule cutadapt:
+    input:
+        ancient("IRMA/{barcode}_bartrim_lr.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
+    log:
+        out = "logs/{barcode}.cutadapt.stdout.log",
+        err = "logs/{barcode}.cutadapt.stderr.log"
+    group:
+        "trim-map"
+    conda:
+        "envs/cutadapt.yaml"
+    message: "Step 4 - clipping reads on both sides"
+    shell:
+        "cutadapt -u 30 -u -30 -o {output} {input} 1> {log.out} 2> {log.err}"
+
+
+
+rule subsample:
+    input:
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq"
+    log:
+        out = "logs/{barcode}.reformat.stdout.log",
+        err = "logs/{barcode}.reformat.stderr.log"
+    group:
+        "trim-map"
+    # conda:
+    #     "envs/bbtools.yaml"
+    message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
+    shell:
+        "/apps/x86_64/bbmap/38.84/reformat.sh"
+        " in={input}"
+        " out={output}"
+        " samplereadstarget=1000000"
+        " qin=33"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+
+
+rule irma:
+    input:
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq")
+    output:
+        touch("IRMA/{barcode}.irma.fin")
+    log:
+        out = "logs/{barcode}.irma.stdout.log",
+        err = "logs/{barcode}.irma.stderr.log"
+    benchmark:
+        "logs/benchmarks/irma_{barcode}.log"
+    group:
+        "trim-map"
+    threads: 14
+    message: "Step 5 - assembling genome"
+    shell:
+        '{workflow.basedir}/scripts/irmawrapper.sh {config["barcodes"][wildcards.barcode]["irma_module"]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
+
+
+# Pipeline waits here for all samples to produce the checkpoint input needed
+#  here and then reevaluates the needed DAG for each sample.
+checkpoint checkirma:
+    input:
+        ancient('IRMA/{barcode}.irma.fin')
+    output:
+        'IRMA/{barcode}.irma.decision'
+    log:
+        "logs/irma/checkirma_{barcode}.log"
+    shell:
+        "[[ -s IRMA/{wildcards.barcode}/SARS-CoV-2.bam ]] &&"
+        " echo passed > {output} ||"
+        " echo failed > {output}"
+
+
+
+def passed_irma(wildcards):
+    with checkpoints.checkirma.get(barcode=wildcards.barcode).\
+    output[0].open() as f:
+        if f.read().strip() == "passed":
+            return 'hadoop/dais.fin'
+        else:
+            return "IRMA_negative/{barcode}"
+
+
+rule pass_negatives:
+    input:
+        "IRMA/{barcode}.irma.decision"
+    output:
+        "IRMA_negative/{barcode}"
+    shell:
+        "touch {output}"
+
+rule bamsort:
+    input:
+        'IRMA/{barcode}.irma.decision'
+    output:
+        'IRMA/{barcode}_SARS-CoV-2_sorted.bam'
+    threads: 14
+    group:
+        'amplicon-cov'
+    log:
+        "logs/bamsort/bamsort_{barcode}.log"
+    shell:
+        'hostname && /scicomp/home-pure/sars2seq/bin/samtools-1.11/samtools sort IRMA/{wildcards.barcode}/SARS-CoV-2.bam -o {output} --threads {threads} 2> {log} || touch {output}'
+
+#Set library primers and PCR Library files according to Library in config
+primers={'swift':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta'},'4pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta'},'articv3':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta'},'sgene_v1':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta'}}
+
+rule amplicov:
+    input:
+        'IRMA/{barcode}_SARS-CoV-2_sorted.bam'
+    output:
+        'IRMA/{barcode}_amplicon_coverage.txt'
+    group:
+        'amplicon-cov'
+    log:
+        "logs/amplicov/{barcode}.log"
+    benchmark:
+        "logs/benchmarks/amplicov_{barcode}.log"
+    params:
+        bedpe = lambda wildcards: primers[config["barcodes"][wildcards.barcode]["Library"]]["bedpe"]
+    shell:
+        'hostname && [[ -f {input} ]] && python {workflow.basedir}/scripts/amplicov.py --bedpe {params.bedpe} --bam {input} -o IRMA -p {wildcards.barcode} 2> {log} && touch {output} || touch {output}'
+
+
+rule cat_amplicov:
+    input:
+        expand('IRMA/{barcode}_amplicon_coverage.txt', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_amplicon_coverage.txt'
+    group:
+        'amplicov2hadoop'
+    log:
+        "logs/amplicov/cat.log"
+    benchmark:
+        "logs/benchmarks/catamplicov_all.log"
+    shell:
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f {input} -o {output} --sc2 2> {log} && touch {output} || touch {output}'
+
+rule cat_allAlleles:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        "hadoop/all_allAlleles_realign.txt"
+    log:
+        "logs/cat_irma/allAlleles.log"
+    benchmark:
+        "logs/benchmarks/catallalleles_all.log"
+    shell:
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-allAlleles.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
+
+rule cat_coverage:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_coverage_realign.txt'
+    log:
+        "logs/cat_irma/coverage.log"
+    benchmark:
+        "logs/benchmarks/catcoverage_all.log"
+    shell:
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-coverage.pad.txt -o {output} --sc2 2> {log} || touch {output}'
+
+
+rule cat_insertions:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_insertions_realign.txt'
+    log:
+        "logs/cat_irma/insertions.log"
+    benchmark:
+        "logs/benchmarks/catinsertions_all.log"
+    shell:
+        'hostname && python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-insertions.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
+
+rule cat_deletions:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_deletions_realign.txt'
+    log:
+        "logs/cat_irma/deletions.log"
+    benchmark:
+        "logs/benchmarks/catdeletions_all.log"
+    shell:
+        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-deletions.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
+
+rule cat_variants:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
+    output:
+        'hadoop/all_variants_realign.txt'
+    log:
+        "logs/cat_irma/all_variants_realign.txt"
+    benchmark:
+        "logs/benchmarks/catvariants_all.log"
+    shell:
+        'python {workflow.basedir}/scripts/addColumns.py -f IRMA/*/tables/SARS-CoV-2-variants.txt -o {output} -n "\s+" --sc2 2> {log} || touch {output}'
+
+
+#root='/'.join(workflow.basedir.split('/')[:-3])
+root='/scicomp/home-pure/sars2seq/prod'
+
+rule dais:
+    input:
+        rules.cdc_config.output
+    output:
+        touch('hadoop/dais.fin')
+    benchmark:
+        'logs/benchmarks/dais_all.log'
+    shell:
+        '{root}/dais-ribosome/ribosome --module BETACORONAVIRUS hadoop/{config[runid]} hadoop/{config[runid]}.seq hadoop/{config[runid]}.ins hadoop/{config[runid]}.del hadoop/{config[runid]}.gen' #add call later
+
+rule finishup:
+    input:
+        passed_irma
+    output:
+        temp("SC2.{barcode}.fin")
+    shell:
+        "touch {output}"
