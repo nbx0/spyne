@@ -150,6 +150,8 @@ rule irma:
     log:
         out = "logs/{barcode}.irma.stdout.log",
         err = "logs/{barcode}.irma.stderr.log"
+    params:
+        irma_config = lambda wildcards: config["barcodes"][wildcards.barcode]["irma_module"]
     benchmark:
         "logs/benchmarks/irma_{barcode}.log"
     group:
@@ -157,7 +159,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome"
     shell:
-        '{workflow.basedir}/scripts/irmawrapper.sh {config["barcodes"][wildcards.barcode]["irma_module"]} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
+        '{workflow.basedir}/scripts/irmawrapper.sh {params.irma_config} {input} {wildcards.barcode} 1> {log.out} 2> {log.err}'
 
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
