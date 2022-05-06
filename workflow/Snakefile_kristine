@@ -34,7 +34,7 @@ rule gather_fastqs:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     message: "Step 1 - merging all read files into a single file"
     shell:
-        "cat /scicomp/home-pure/sars2seq/data/by-instrument/18-6-605_Nanopore-GridION-GXB02142/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{params.barcode_number}/*fastq* > {output}"
+        "cat /scicomp/home-pure/sars2seq/data/by-instrument/*_Nanopore-GridION-*/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{params.barcode_number}/*fastq* > {output}"
 
 
 rule barcode_trim_left:
@@ -220,7 +220,7 @@ rule bamsort:
         'hostname && /scicomp/home-pure/sars2seq/bin/samtools-1.11/samtools sort IRMA/{wildcards.barcode}/SARS-CoV-2.bam -o {output} --threads {threads} 2> {log} || touch {output}'
 
 #Set library primers and PCR Library files according to Library in config
-primers={'swift':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta'},'4pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta'},'articv3':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta'},'sgene_v1':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta'}}
+primers={'swift':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta'},'4pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta'},'articv3':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta'},'sgene_v1':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta'},'2pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq    /Resources/primers/SC2_200710-bypool200814.fasta'}}
 
 rule amplicov:
     input:
