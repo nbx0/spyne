@@ -15,7 +15,7 @@ if ! [ -d "$SCRIPT_PATH/logs" ]; then
     mkdir $SCRIPT_PATH/logs
 fi
 
-TIME_FILTER=1223200 #86400 # 24 h default initial search unless provided or set via log
+TIME_FILTER=86400 # 24 h default initial search unless provided or set via log
 if [[ $TIME_FILTER_INPUT ]]; then
     TIME_FILTER=$TIME_FILTER_INPUT
 elif [ -e $ARTIFACT_LOG ]; then
