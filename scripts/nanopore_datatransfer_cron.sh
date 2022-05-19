@@ -1,5 +1,5 @@
 #!/bin/bash
-# K. Lacek
+# K. Lacek and T. Stark
 # May 17 2022
 
 SCRIPT_PATH="/scicomp/groups-pure/sars2seq/dev/on-premises-ont-assembly/scripts"
@@ -43,8 +43,7 @@ if [ -e $LIST_FILE ] && [[ $TIME_FILTER ]]; then
                     if (( $(file_last_modified $SEQ_SUM) < $TIME_FILTER )); then
                         RUNFOLDER=$LATEST_DIR
                         echo "...Run Complete indicator located...RUN FOLDER = $RUNFOLDER"
-                        # Run instrument integration wrapper for completed run
-                        #$SCRIPT_PATH/ilmn_wrapper.sh -s $CLARITY_HOSTNAME -u $APIUSER -p $CRED -r $RUNFOLDER
+                        # Data copy for completed run
 			echo "...Copying run $(basename $RUNFOLDER)"
 			cp -r $RUNFOLDER /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/ && touch /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $RUNFOLDER)/demux.fin
                     fi
