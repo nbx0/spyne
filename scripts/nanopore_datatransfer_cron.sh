@@ -5,7 +5,7 @@
 SCRIPT_PATH="/scicomp/groups-pure/sars2seq/dev/on-premises-ont-assembly/scripts"
 LIST_FILE="$SCRIPT_PATH/config/instruments_list.txt"
 ARTIFACT_LOG="$SCRIPT_PATH/logs/runids_processed.log"
-INSTRUMENTS_GWAS="/scicomp/instruments"
+INSTRUMENTS_GWAS="/scicomp/instruments-pure"
 
 file_last_modified() {
     date -d "now - $( stat -c "%Y" $1 ) seconds" +%s
