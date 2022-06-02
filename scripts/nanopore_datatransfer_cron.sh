@@ -45,7 +45,7 @@ if [ -e $LIST_FILE ] && [[ $TIME_FILTER ]]; then
                         echo "...Run Complete indicator located...RUN FOLDER = $RUNFOLDER"
                         # Data copy for completed run
 			echo "...Copying run $(basename $RUNFOLDER)"
-			cp -r $RUNFOLDER /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/ && touch /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $RUNFOLDER)/demux.fin
+			ln -s $RUNFOLDER /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/ && touch /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $RUNFOLDER)/demux.fin
                     fi
                 fi
             fi
