@@ -35,17 +35,17 @@ if [ -e $LIST_FILE ] && [[ $TIME_FILTER ]]; then
 	    INSTR_DIR=$INSTRUMENTS_GWA/$INSTR
             if [ -d $INSTR_DIR ]; then
                 echo "...Checking Instrument Directory $INSTR_DIR"
-                LATEST_DIR=$(ls -dt $INSTR_DIR/* | head -n 1 )
+                LATEST_DIR=$(ls -dt $INSTR_DIR/* | head -1 )
 		echo "...Latest finished run found at $LATEST_DIR"
-		SEQ_SUM=$LATEST_DIR/*/*/sequencing_summary*.txt
+		SEQ_SUM=$LATEST_DIR/*/*/sequencing_summary*.txt || exit 0
 		if [ ! -z $SEQ_SUM ]; then
 			echo "...Sequencing summary found at $SEQ_SUM"
-                    if (( $(file_last_modified $SEQ_SUM) < $TIME_FILTER )); then
+                    if (( $(file_last_modified $SEQ_SUM) < $TIME_FILTER )) && [ ! -d /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $LATEST_DIR) ]; then
                         RUNFOLDER=$LATEST_DIR
                         echo "...Run Complete indicator located...RUN FOLDER = $RUNFOLDER"
                         # Data copy for completed run
 			echo "...Copying run $(basename $RUNFOLDER)"
-			ln -s $RUNFOLDER /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/ && touch /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $RUNFOLDER)/demux.fin
+			cp -r $RUNFOLDER /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/ && touch /scicomp/groups-pure/sars2seq/data/by-instrument/$INSTR/$(basename $RUNFOLDER)/demux.fin
                     fi
                 fi
             fi

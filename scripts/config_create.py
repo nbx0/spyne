@@ -31,14 +31,14 @@ def reverse_complement(seq):
     return ''.join(rev[i] for i in seq)
 
 def clarityid_csid_cuid_control(samplesheet_sample_id):
-        controls = ['ntc', 'control', 'hec','isolate_rna', 'pcr', 'water','blank','hsc']
+        controls = ['ntc', 'control', 'hec','isolate_rna', 'pcr', 'water','blank','hsc','positive']
         if True in [True for i in controls if i in samplesheet_sample_id.lower()]:
                 #if '-' in samplesheet_sample_id:
                 return samplesheet_sample_id.split('_')[0], 'control', '_'.join(samplesheet_sample_id.split('_')[1:-2]), samplesheet_sample_id.split('_')[-1]
                 #else:
                 #        return samplesheet_sample_id.split('_')[0], 'control', '_'.join(samplesheet_sample_id.split('_')[1:])
         else:
-                return samplesheet_sample_id.split('_')[0:4444]
+                return samplesheet_sample_id.split('_')[0:4]
 
 df = pd.read_csv(argv[1])
 dfd = df.to_dict('index')
@@ -55,7 +55,7 @@ try:
 except:
     plate = 'NULL'
 for d in dfd.values():
-    fastq_pass = glob('/scicomp/home-pure/sars2seq/data/by-instrument/'+ machine + '/' + runid + '/no_sample/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
+    fastq_pass = glob('/scicomp/home-pure/sars2seq/data/by-instrument/'+ machine + '/' + runid + '/*/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
     if d['barcode'] in [x.split("/")[-2] for x in fastq_pass]:
         clarityid, csid, cuid, artifactid = clarityid_csid_cuid_control(d['Alias'])
         data['barcodes'][d['Alias']] = {'clarityid':clarityid,

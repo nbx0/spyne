@@ -3,6 +3,32 @@
 
 import os
 import sys
+from subprocess import run
+import pandas as pd
+import socket
+from tempfile import NamedTemporaryFile
+
+emails_all = 'nbx0@cdc.gov fep2@cdc.gov ooj4@cdc.gov bun3@cdc.gov qgx6@cdc.gov ymw8@cdc.gov'
+
+machine_html = pd.DataFrame({'col':[config['machine'], config['runid'], socket.gethostname()]}, index=['Machine','RunID','Hostname']).to_html(header=False)
+samples_df = pd.DataFrame.from_dict(config['barcodes'], orient='index')[['Artifactid', 'cuid', 'csid', 'Library']].reset_index(drop=True)
+samples_html = samples_df.to_html(index=False)
+
+startemail = NamedTemporaryFile('w', delete=False)
+print(f'Subject: SC2 Analyses Begun - {config["runid"]}\nFrom: SC2genomics\nTo: {emails_all}\nContent-type: text/html\n\n {machine_html}\n\n{samples_html}', file=startemail)
+startemail.close()
+onstart:
+	shell("sendmail -t < {startemail.name} ")
+
+onerror:
+	shell("echo -e 'Subject: SC2 Analyses Error - {config[runid]}\nFrom: SC2genomics\nTo: {emails_all}\nContent-type: text/html\n\n {machine_html}\n\n{log}' | sendmail -t")
+
+results = '\n'.join([f"https://rconnect.biotech.cdc.gov/ngs-reports/html?machine={config['machine']}&runid={config['runid']}&project={p}&return=html" for p in set(samples_df['csid']) if p != 'control'])
+successemail = NamedTemporaryFile('w', delete=False)
+print(f'Subject: SC2 Analyses Completed - {config["runid"]}\nFrom: SC2genomics\nTo: {emails_all}\nContent-type: text/html\n\n {machine_html} \n\n {results} \n\n{samples_html}', file=successemail)
+successemail.close()
+onsuccess:
+	shell("sendmail -t < {successemail.name}")
 
 
 shell.executable("bash")
@@ -17,7 +43,7 @@ rule all:
     input:
         expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()),
 	ancient('IRMA/IRMA_reads2hadoop.fin'),
-	ancient('hadoop/amplicon2hadoop.fin'),
+	#ancient('hadoop/amplicon2hadoop.fin'),
 	ancient('hadoop/irmaConsensus2hadoop.fin')
     shell:
         'python {workflow.basedir}/scripts/addColumns.py --sc2 --benchmark -o hadoop/benchmarks.txt -f logs/benchmarks/* && python {workflow.basedir}/scripts/hadoopReloader.py -c config.yaml -d hadoop'
@@ -221,7 +247,7 @@ rule bamsort:
 
 #Set library primers and PCR Library files according to Library in config
 primers={'swift':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SNAP_v2_amplicon_panel.fasta'},'4pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814.fasta'},'articv3':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/artic_v3.fasta'},'sgene_v1':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.bedpe','fasta':'/scicomp/home-pure/sars2seq/Resources/primers/sgene_v1.fasta'},'2pool':{'bedpe':'/scicomp/home-pure/sars2seq/Resources/primers/SC2_200710-bypool200814_IRMAref.bedpe','fasta':'/scicomp/home-pure/sars2seq    /Resources/primers/SC2_200710-bypool200814.fasta'}}
-
+"""
 rule amplicov:
     input:
         'IRMA/{barcode}_SARS-CoV-2_sorted.bam'
@@ -266,7 +292,7 @@ rule amplicov2hadoop:
         "logs/benchmarks/amplicov2hadoop_all.log"
     shell:
         'hostname && {workflow.basedir}/scripts/hput {input} /user/nbx0/sars_cov2/amplicon_coverage/{config[runid]}_amplicon_coverage.txt && {workflow.basedir}/scripts/himpala "refresh amplicon_coverage" sars_cov2  2> {log}' #add hput and himpala later
-
+"""
 rule cat_allAlleles:
     input:
         expand('IRMA/{barcode}.irma.decision', barcode=config['barcodes'].keys())
