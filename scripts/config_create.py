@@ -41,7 +41,9 @@ except:
         barseqs = yaml.safe_load(y)
 for d in dfd.values():
     fastq_pass = glob(machine + '/' + runid + '/*/*' + d['flow_cell_id'] + "*/fastq_pass/*/")
-    data['barcodes'][d['Alias']] = {
+    if d['barcode'] in [x.split("/")[-2] for x in fastq_pass]:
+
+        data['barcodes'][d['Alias']] = {
                                                                         'flow_cell_id':d['flow_cell_id'],
                                                                         'flow_cell_product_code':d['flow_cell_product_code'],
                                                                         'kit':d['kit'],
@@ -50,7 +52,8 @@ for d in dfd.values():
                                                                         'barcode_number':d['barcode'],
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
-
+    else:
+        failures += d['barcode']
 with open('config.yaml', 'w') as out:
         yaml.dump(data, out, default_flow_style=False)
 

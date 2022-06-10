@@ -27,8 +27,8 @@ rule gather_fastqs:
         experiment_id = lambda wildcards: config["barcodes"][wildcards.barcode]["experiment_id"],
         sample_id = lambda wildcards: config["barcodes"][wildcards.barcode]["sample_id"],
         flow_cell_id = lambda wildcards: config["barcodes"][wildcards.barcode]["flow_cell_id"],
-        barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
-        instrument_path = {config[machine]}
+        barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"],
+        instrument_path = config["machine"]
     message: "Step 1 - merging all read files into a single file"
     shell:
         "cat {params.instrument_path}/{params.experiment_id}/{params.sample_id}/*{params.flow_cell_id}*/fastq_pass/{params.barcode_number}/*fastq* > {output}"
@@ -190,15 +190,6 @@ rule pass_negatives:
         "touch {output}"
 
 
-rule dais:
-    input:
-        rules.cdc_config.output
-    output:
-        touch('hadoop/dais.fin')
-    benchmark:
-        'logs/benchmarks/dais_all.log'
-    shell:
-        '{root}/dais-ribosome/ribosome --module BETACORONAVIRUS hadoop/{config[runid]} hadoop/{config[runid]}.seq hadoop/{config[runid]}.ins hadoop/{config[runid]}.del hadoop/{config[runid]}.gen' #add call later
 
 rule finishup:
     input:
