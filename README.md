@@ -1,4 +1,4 @@
-# On-Premises ONT Assembly
+# On-Premises ONT Assembly for Spike Only Sequencing
 
 Snakemake workflow specifically for ONT data processing with any infrastructure
 
