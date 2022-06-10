@@ -1,6 +1,6 @@
 # On-Premises ONT Assembly
 
-Snakemake workflow specifically for ONT data processing with CDC-specific infrastructure
+Snakemake workflow specifically for ONT data processing with any infrastructure
 
 
 ## General Steps of the Pipeline
@@ -10,7 +10,17 @@ Snakemake workflow specifically for ONT data processing with CDC-specific infras
 
 
 
+## To run Pipeline
+1. Export IRMA to path
+2. Activate conda environment
+ex: 
+` source /scicomp/groups/Projects/SARS2Seq/bin/miniconda/bin/activate /scicomp/home-pure/sars2seq/miniconda/envs/snakemake`
+3. Create samplesheet.csv
+4. Create config.yaml from samplesheet
 
+` python scripts/config_create.py <path to samplesheet.csv> <path to instrument run> <Nanopore run name> `
+
+5. Run Snakemake
 
 
 #### Dependencies
