@@ -176,7 +176,7 @@ def passed_irma(wildcards):
     with checkpoints.checkirma.get(barcode=wildcards.barcode).\
     output[0].open() as f:
         if f.read().strip() == "passed":
-            return 'hadoop/dais.fin'
+            return 'IRMA/{barcode}'
         else:
             return "IRMA_negative/{barcode}"
 
