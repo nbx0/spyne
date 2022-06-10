@@ -5,8 +5,8 @@
 irmaconfig=$1
 read1=$2
 samplename=$3
-if [[ -z "${SARS2_ONT_HOME}" ]]; then
-  SARS2_ONT_HOME='/scicomp/home-pure/sars2seq/.on-premises-ont-assembly-development/'
+if [[ -z $(which IRMA) ]]; then
+  echo "ERROR: add IRMA to path" && exit 0
 fi
 
 # Executing this script removes any precomputed temporary data
