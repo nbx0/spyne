@@ -50,7 +50,7 @@ rule barcode_trim_left:
     threads: 16
     message: "Step 2 - trimming left barcode"
     shell:
-        "/apps/x86_64/bbmap/38.84/bbduk.sh"
+        "bbduk.sh" 
         " in={input}"
         " out={output}"
         " hdist=3"
@@ -77,12 +77,10 @@ rule barcode_trim_right:
         barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence_rc"]
     group:
         "trim-map"
-    # conda:
-    #     "envs/bbtools.yaml"
     threads: 16
     message: "Step 3 - trimming right barcode"
     shell:
-        "/apps/x86_64/bbmap/38.84/bbduk.sh"
+        "bbduk.sh"
         " in={input}"
         " out={output}"
         " hdist=3"
@@ -124,11 +122,9 @@ rule subsample:
         err = "logs/{barcode}.reformat.stderr.log"
     group:
         "trim-map"
-    # conda:
-    #     "envs/bbtools.yaml"
     message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
     shell:
-        "/apps/x86_64/bbmap/38.84/reformat.sh"
+        "reformat.sh"
         " in={input}"
         " out={output}"
         " samplereadstarget=1000000"

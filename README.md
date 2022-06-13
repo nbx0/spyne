@@ -11,7 +11,7 @@ Snakemake workflow specifically for ONT data processing with any infrastructure
 
 
 ## To run Pipeline
-1. Export IRMA to path
+1. Export IRMA, bbtools (bbduk.sh, reformat.sh) to path
 2. Activate conda environment
 ex: 
 ` source /scicomp/groups/Projects/SARS2Seq/bin/miniconda/bin/activate /scicomp/home-pure/sars2seq/miniconda/envs/snakemake`

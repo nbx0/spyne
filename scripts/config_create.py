@@ -7,13 +7,6 @@ import subprocess
 
 root = '/'.join(abspath(__file__).split('/')[:-2])
 
-############### IN TESTING
-# FASTQ location is hardcoded here. Needs to be updated for production.
-#searchDir = '/'.join(abspath(argv[1]).split('/')[:-1])
-#fastqs=glob('{}/**/*.fastq.gz'.format(searchDir), recursive=True)
-###################
-
-
 if len(argv) < 1:
         exit('\n\tUSAGE: {} <samplesheet.csv> <machine_path> <runid>\n'.format(__file__))
 
@@ -35,7 +28,6 @@ failures = ''
 try:
     with open('{}/lib/{}.yaml'.format(root, dfd[0]['Barcode_expansion_pack']), 'r') as y:
         barseqs = yaml.safe_load(y)
-        #print(barseqs)
 except:
     with open('{}/lib/{}.yaml'.format(root, dfd[0]['kit']), 'r') as y:
         barseqs = yaml.safe_load(y)
@@ -53,9 +45,9 @@ for d in dfd.values():
                                                                         'barcode_sequence':barseqs[d['barcode']],
                                                                         'barcode_sequence_rc':reverse_complement(barseqs[d['barcode']])}
     else:
-        failures += d['barcode']
+        failures += d['barcode'] + '\n'
 with open('config.yaml', 'w') as out:
         yaml.dump(data, out, default_flow_style=False)
 
 if len(failures) > 1:
-    print("failed samples detected")
+    print("failed samples detected:\n",failures.strip() )
