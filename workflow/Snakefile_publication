@@ -193,4 +193,4 @@ rule finishup:
     output:
         temp("SC2.{barcode}.fin")
     shell:
-        "touch {output}"
+        "cat IRMA/*/amended_consensus/*.a2m >> IRMA/all_aligned.fasta && cat IRMA/*/amended_consensus/*.pad.fa >> IRMA/all.fasta && touch {output}"
