@@ -1,0 +1,26 @@
+name: cutadapt
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - ca-certificates=2022.6.15
+  - certifi=2017.1.23
+  - cutadapt=1.13
+  - libgcc-ng=12.1.0
+  - libgomp=12.1.0
+  - libzlib=1.2.12
+  - ncurses=5.9
+  - openssl=1.0.2u
+  - pip=20.3.4
+  - python=3.4.5
+  - readline=6.2
+  - setuptools=32.3.1
+  - sqlite=3.13.0
+  - tk=8.5.19
+  - wheel=0.37.1
+  - xopen=0.1.1
+  - xz=5.2.6
+  - zlib=1.2.12
