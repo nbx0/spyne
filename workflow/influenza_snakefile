@@ -1,0 +1,117 @@
+#!/usr/bin/env snakemake
+
+import os
+import sys
+
+shell.executable("bash")
+
+workdir: "."
+configfile: "config.yaml"
+
+rule all:
+    input:
+        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()),
+        'coverage.fin'
+    shell:
+        #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT flu'
+        "echo DONEDONE"
+
+rule gather_fastqs:
+    input:
+        "config.yaml"
+    output:
+        temp("IRMA/cat_{barcode}.fastq.gz")
+    message: "Step 1 - merging all read files into a single file"
+    params:
+        barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
+    shell:
+        "cat {params.barcode_number}/*fastq* > {output}"
+
+rule irma:
+    input:
+        "IRMA/cat_{barcode}.fastq.gz"
+    output:
+        temp(touch("IRMA/{barcode}.irma.fin"))
+    log:
+        out = "logs/{barcode}.irma.stdout.log",
+        err = "logs/{barcode}.irma.stderr.log"
+    benchmark:
+        "logs/benchmarks/irma_{barcode}.log"
+    group:
+        "trim-map"
+    threads: 14
+    message: "Step 2 - assembling genome with IRMA"
+    shell:
+        "{workflow.basedir}/scripts/irmawrapper.sh {input} 2> {log.err} |tee -a {log.out}"
+
+# Pipeline waits here for all samples to produce the checkpoint input needed
+#  here and then reevaluates the needed DAG for each sample.
+checkpoint checkirma:
+    input:
+        ancient('IRMA/{barcode}.irma.fin')
+    output:
+        temp('IRMA/{barcode}.irma.decision')
+    log:
+        "logs/irma/checkirma_{barcode}.log"
+    shell:
+        "[[ -d IRMA/{wildcards.barcode}/figures ]] &&"
+        " echo passed > {output} ||"
+        " echo failed > {output}"
+
+
+
+def passed_irma(wildcards):
+    with checkpoints.checkirma.get(barcode=wildcards.barcode).\
+    output[0].open() as f:
+        if f.read().strip() == "passed":
+            return 'IRMA/{barcode}'
+        else:
+            return "IRMA_negative/{barcode}"
+
+
+rule pass_negatives:
+    input:
+        "IRMA/{barcode}.irma.decision"
+    output:
+        "IRMA_negative/{barcode}"
+    shell:
+        "touch {output}"
+
+rule catfiles:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config["barcodes"].keys())
+    output:
+        temp("DAIS_ribosome_input.fasta")
+    message: "Step 3 - Collecting consensus genomes"
+    shell:
+        "{workflow.basedir}/scripts/dais_input.sh > {output} || touch {output}"
+
+rule dais_ribosome:
+    input: 
+        "DAIS_ribosome_input.fasta"
+    output:
+        temp('DAIS_ribosome_output.fin')
+    message: "Step 4 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
+    log:
+        "logs/dais_ribosome/dais.ribosome.log"
+    shell:
+        "{workflow.basedir}/scripts/daiswrapper.sh {input} && touch {output} || touch {output}"
+
+rule view_coverage:
+    input:
+        "DAIS_ribosome_output.fin"
+    output:
+        temp("coverage.fin")
+    message: "Step 5 - Opening coverage plots"
+    log:
+        "logs/irma/view_coverage.log"
+    shell:
+        "for i in  IRMA/*/figures/*coverage*; do wslview $i; done; touch {output}"
+
+rule finishup:
+    input:
+        passed_irma
+    output:
+        temp("FLU_{barcode}.fin")
+    shell:
+        "touch {output}"
