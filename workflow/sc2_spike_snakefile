@@ -23,7 +23,7 @@ rule gather_fastqs:
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat {params.barcode_number}/*fastq* > {output}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output}"
 
 
 rule barcode_trim_left:
