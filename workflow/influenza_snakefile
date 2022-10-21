@@ -25,11 +25,109 @@ rule gather_fastqs:
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat {params.barcode_number}/*fastq* > {output}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output}"
+
+rule barcode_trim_left:
+    input:
+        ancient("IRMA/cat_{barcode}.fastq.gz")
+    output:
+        "IRMA/{barcode}_bartrim_l.fastq"
+    log:
+        out = "logs/{barcode}.bbduk.trim_left.stdout.log",
+        err = "logs/{barcode}.bbduk.trim_left.stderr.log"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
+    group:
+        "trim-map"
+    
+    threads: 16
+    message: "Step 2 - trimming left barcode"
+    shell:
+        "bbduk.sh" 
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=l"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+
+
+rule barcode_trim_right:
+    input:
+        ancient("IRMA/{barcode}_bartrim_l.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr.fastq"
+    log:
+        out = "logs/{barcode}.bbduk.trim_right.stdout.log",
+        err = "logs/{barcode}.bbduk.trim_right.stderr.log"
+    params:
+        barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence_rc"]
+    group:
+        "trim-map"
+    threads: 16
+    message: "Step 3 - trimming right barcode"
+    shell:
+        "bbduk.sh"
+        " in={input}"
+        " out={output}"
+        " hdist=3"
+        " literal={params.barcode_sequence}"
+        " ktrim=r"
+        " k=17"
+        " qin=33"
+        " rcomp=f"
+        " threads={threads}"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+
+rule cutadapt:
+    input:
+        ancient("IRMA/{barcode}_bartrim_lr.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
+    log:
+        out = "logs/{barcode}.cutadapt.stdout.log",
+        err = "logs/{barcode}.cutadapt.stderr.log"
+    group:
+        "trim-map"
+    conda:
+        "envs/cutadapt.yaml"
+    message: "Step 4 - clipping reads on both sides"
+    shell:
+        "cutadapt -u 30 -u -30 -o {output} {input} 1> {log.out} 2> {log.err}"
+
+
+
+rule subsample:
+    input:
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
+    output:
+        "IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq"
+    log:
+        out = "logs/{barcode}.reformat.stdout.log",
+        err = "logs/{barcode}.reformat.stderr.log"
+    group:
+        "trim-map"
+    message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
+    shell:
+        "reformat.sh"
+        " in={input}"
+        " out={output}"
+        " samplereadstarget=1000000"
+        " qin=33"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 rule irma:
     input:
-        "IRMA/cat_{barcode}.fastq.gz"
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq")
     output:
         temp(touch("IRMA/{barcode}.irma.fin"))
     log:
@@ -40,7 +138,7 @@ rule irma:
     group:
         "trim-map"
     threads: 14
-    message: "Step 2 - assembling genome with IRMA"
+    message: "Step 5 - assembling genome with IRMA"
     shell:
         "{workflow.basedir}/scripts/irmawrapper.sh {input} 2> {log.err} |tee -a {log.out}"
 
@@ -82,7 +180,7 @@ rule catfiles:
         expand('IRMA/{barcode}.irma.decision', barcode=config["barcodes"].keys())
     output:
         temp("DAIS_ribosome_input.fasta")
-    message: "Step 3 - Collecting consensus genomes"
+    message: "Step 6 - Collecting consensus genomes"
     shell:
         "{workflow.basedir}/scripts/dais_input.sh > {output} || touch {output}"
 
@@ -91,7 +189,7 @@ rule dais_ribosome:
         "DAIS_ribosome_input.fasta"
     output:
         temp('DAIS_ribosome_output.fin')
-    message: "Step 4 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
+    message: "Step 7 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
@@ -102,7 +200,7 @@ rule view_coverage:
         "DAIS_ribosome_output.fin"
     output:
         temp("coverage.fin")
-    message: "Step 5 - Opening coverage plots"
+    message: "Step 8 - Opening coverage plots"
     log:
         "logs/irma/view_coverage.log"
     shell:
