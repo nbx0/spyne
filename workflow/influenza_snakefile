@@ -10,8 +10,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()),
-        'coverage.fin'
+        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin'
     shell:
         #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT flu'
         "echo DONEDONE"
@@ -182,7 +181,7 @@ rule catfiles:
         temp("DAIS_ribosome_input.fasta")
     message: "Step 6 - Collecting consensus genomes"
     shell:
-        "{workflow.basedir}/scripts/dais_input.sh > {output} || touch {output}"
+        "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
 
 rule dais_ribosome:
     input: 
@@ -193,18 +192,9 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh {input} && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {input} -m INFLUENZA && touch {output} || touch {output}"
 
-rule view_coverage:
-    input:
-        "DAIS_ribosome_output.fin"
-    output:
-        temp("coverage.fin")
-    message: "Step 8 - Opening coverage plots"
-    log:
-        "logs/irma/view_coverage.log"
-    shell:
-        "for i in  IRMA/*/figures/*coverage*; do wslview $i; done; touch {output}"
+
 
 rule finishup:
     input:
