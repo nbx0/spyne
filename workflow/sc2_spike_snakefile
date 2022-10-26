@@ -10,7 +10,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys())
+        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin'
     shell:
         'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT spike'
 
@@ -176,6 +176,27 @@ rule pass_negatives:
         "IRMA_negative/{barcode}"
     shell:
         "touch {output}"
+
+
+rule catfiles:
+    input:
+        expand('IRMA/{barcode}.irma.decision', barcode=config["barcodes"].keys())
+    output:
+        temp("DAIS_ribosome_input.fasta")
+    message: "Step 6 - Collecting consensus genomes"
+    shell:
+        "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
+
+rule dais_ribosome:
+    input: 
+        "DAIS_ribosome_input.fasta"
+    output:
+        temp('DAIS_ribosome_output.fin')
+    message: "Step 7 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
+    log:
+        "logs/dais_ribosome/dais.ribosome.log"
+    shell:
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {input} -m BETACORONAVIRUS && touch {output} || touch {output}"
 
 
 
