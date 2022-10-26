@@ -7,8 +7,10 @@ do
 	esac
 done
 echo $input
+sed -i 's/-/_/g' $input
 readlink -f $input
-dais_out=$(echo $input|cut -d '.' -f 1) 
+dais_out=$(echo $input|cut -d '.' -f 1)
+dais_out=${dais_out%"_input"} 
 [[ ! -d IRMA/dais_results ]] && mkdir IRMA/dais_results
 cmd="docker run --rm \
     -v $PWD:/data \

@@ -96,11 +96,11 @@ rule cutadapt:
         err = "logs/{barcode}.cutadapt.stderr.log"
     group:
         "trim-map"
-    conda:
-        "envs/cutadapt.yaml"
+    #switch to container (cutadapt)
+    
     message: "Step 4 - clipping reads on both sides"
     shell:
-        "cutadapt -u 30 -u -30 -o {output} {input} 1> {log.out} 2> {log.err}"
+        "cutadapt -u 30 -u -30 --output {output} {input} 1> {log.out} 2> {log.err}"
 
 
 
@@ -184,8 +184,9 @@ rule catfiles:
     output:
         temp("DAIS_ribosome_input.fasta")
     message: "Step 6 - Collecting consensus genomes"
+    #need to ignore the .pad.fas
     shell:
-        "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
+        "for file in $(ls IRMA/*/amended_consensus/*.fa | grep -v pad); do cat $file >> {output}; done || touch {output}"
 
 rule dais_ribosome:
     input: 
