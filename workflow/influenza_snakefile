@@ -96,8 +96,6 @@ rule cutadapt:
         err = "logs/{barcode}.cutadapt.stderr.log"
     group:
         "trim-map"
-    #change to container
-    
     message: "Step 4 - clipping reads on both sides"
     shell:
         "cutadapt -u 30 -u -30 --output {output} {input} 1> {log.out} 2> {log.err}"

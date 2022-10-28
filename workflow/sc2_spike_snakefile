@@ -96,7 +96,7 @@ rule cutadapt:
         err = "logs/{barcode}.cutadapt.stderr.log"
     group:
         "trim-map"
-    #switch to container (cutadapt)
+    
     
     message: "Step 4 - clipping reads on both sides"
     shell:
@@ -184,7 +184,6 @@ rule catfiles:
     output:
         temp("DAIS_ribosome_input.fasta")
     message: "Step 6 - Collecting consensus genomes"
-    #need to ignore the .pad.fas
     shell:
         "for file in $(ls IRMA/*/amended_consensus/*.fa | grep -v pad); do cat $file >> {output}; done || touch {output}"
 
