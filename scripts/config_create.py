@@ -7,7 +7,7 @@ import subprocess
 import os
 
 root = "/".join(abspath(__file__).split("/")[:-2])
-
+print("testing new dev changes")
 if len(argv) < 1:
     exit(
         "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type>\n".format(__file__)
@@ -25,7 +25,7 @@ if 'ont' in experiment_type.lower():
     if 'fastq_pass' in runpath:
         data = {'runid':runpath.split('/')[runpath.split('/').index('fastq_pass') -1], 'barcodes':{}}
     else:
-        data = {'runid':runpath, 'barcodes':{}}
+        data = {'runid':runpath.split('/')[-1], 'barcodes':{}}
     def reverse_complement(seq):
         rev = {"A": "T", "T": "A", "C": "G", "G": "C", ",": ","}
         seq = seq[::-1]
@@ -61,7 +61,7 @@ if 'ont' in experiment_type.lower():
     if len(failures) > 1:
         print("failed samples detected: Barcodes\n", failures.strip())
 else:
-    data = {'runid':runpath, 'samples':{}}
+    data = {'runid':runpath.split('/')[-1], 'samples':{}}
     for d in dfd.values():
         data["samples"][d["Sample ID"]] = {
                 "sample_type": d["Sample Type"]
@@ -69,7 +69,7 @@ else:
 with open(runpath.replace("fastq_pass", "") + "/config.yaml", "w") as out:
     yaml.dump(data, out, default_flow_style=False)
 
-snakefile_path = f"{root}/../SC2-spike-seq/workflow/"
+snakefile_path = "/SC2-spike-seq/workflow/"
 if "ont" in experiment_type.lower():
 
     if "flu" in experiment_type.lower():

@@ -128,13 +128,13 @@ RUN pip install -r /SC2-spike-seq/requirements.txt
 ############# Run SC2-spike-seq ##################
 
 # Copy all files to docker images
-COPY SC2-spike-seq /SC2-spike-seq/SC2-spike-seq
+COPY snake-kickoff /SC2-spike-seq/snake-kickoff
 
 # Convert SC2-spike-seq from Windows style line endings to Unix-like control characters
-RUN dos2unix /SC2-spike-seq/SC2-spike-seq
+RUN dos2unix /SC2-spike-seq/snake-kickoff
 
 # Allow permission to excute the bash scripts
-RUN chmod a+x /SC2-spike-seq/SC2-spike-seq
+RUN chmod a+x /SC2-spike-seq/snake-kickoff
 
 # Allow permission to read and write files to SC2-spike-seq directory
 RUN chmod -R a+rwx /SC2-spike-seq
@@ -146,4 +146,4 @@ RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 ENV PATH="$PATH:/SC2-spike-seq"
 
 # Keep container running
-ENTRYPOINT ["/bin/bash", "-c", "SC2-spike-seq"]
+ENTRYPOINT ["/bin/bash", "-c", "snake-kickoff"]
