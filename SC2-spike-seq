@@ -1,0 +1,35 @@
+
+#!/bin/bash 
+# Wrapper to perform genome assembly 
+
+# Run whatever Bash commands here
+RESOURCE_ROOT=/SC2-spike-seq
+BBTOOLS_ROOT=/opt/bbtools
+JAVA_ROOT=/opt/java
+
+# Export bbtools to system path
+bbtools_path=`ls ${BBTOOLS_ROOT}`
+
+for eachdir in ${bbtools_path}
+do
+	export PATH=$PATH:${BBTOOLS_ROOT}/${eachdir}
+done
+
+# Export java to system path
+java_path=`ls ${JAVA_ROOT}`
+
+for eachdir in ${java_path}
+do
+	export PATH=$PATH:${JAVA_ROOT}/${eachdir}/bin
+done
+
+# Check commands that user provided
+case $1 in
+	"") python $1;;
+	*)
+		# Create config.yaml from samplesheet
+		python $RESOURCE_ROOT/scripts/config_create.py "$@"
+	;;
+esac
+
+

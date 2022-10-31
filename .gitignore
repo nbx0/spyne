@@ -2,3 +2,6 @@
 *IRMA/*
 .snakemake
 .vscode/
+java
+docker
+bbtools
