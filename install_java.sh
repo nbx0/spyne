@@ -31,10 +31,11 @@ then
 	do
 		echo $i
 		file=$(head -${i} ${java_clean} | tail -1 | sed 's,\r,,g')
-		directory=$(sed -e 's,open,,g' -e 's,_linux-x64_bin.tar.gz,,g' ${java_clean})
 		echo $file
-		sudo tar -zxf ${RESOURCE_ROOT}/java/${file} -C ${PACKAGE_ROOT}
+		wget --no-check-certificate ${file} -O ${PACKAGE_ROOT}/fetched_package
+		sudo tar -zxf ${PACKAGE_ROOT}/fetched_package -C ${PACKAGE_ROOT}
 		i=$(($i+1))
+		rm -rf ${PACKAGE_ROOT}/fetched_package
 	done
 
 	# return message to keep the process going

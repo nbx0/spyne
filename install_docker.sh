@@ -26,6 +26,7 @@ then
 		echo $file
 		sudo dpkg -i ${RESOURCE_ROOT}/docker/${file}
 		i=$(($i+1))
+		rm -rf ${RESOURCE_ROOT}/docker/${file}
 	done
 
 	# return message to keep the process going

@@ -50,10 +50,7 @@ ENV WORKDIR=/data
 ENV STAGE=prod
 
 # Copy all scripts to docker images
-COPY scripts /SC2-spike-seq/scripts
-
-# Copy workflow files to docker images
-COPY workflow /SC2-spike-seq/worflow
+COPY . /SC2-spike-seq
 
 ############# Build Stage: Final ##################
 

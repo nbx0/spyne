@@ -34,6 +34,7 @@ then
 		echo $file
 		sudo tar -zxf ${RESOURCE_ROOT}/bbtools/${file} -C ${PACKAGE_ROOT}
 		i=$(($i+1))
+		rm -rf ${RESOURCE_ROOT}/bbtools/${file}
 	done
 
 	# return message to keep the process going
