@@ -137,7 +137,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome with IRMA"
     shell:
-        "{workflow.basedir}/scripts/irmawrapper.sh {input} 2> {log.err} |tee -a {log.out}"
+        "docker exec -it irma-1.0.2p3 IRMA FLU-minion /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
@@ -190,7 +190,7 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
 
 
 

@@ -12,9 +12,8 @@ readlink -f $input
 dais_out=$(echo $input|cut -d '.' -f 1)
 dais_out=${dais_out%"_input"} 
 [[ ! -d IRMA/dais_results ]] && mkdir IRMA/dais_results
-cmd="docker run --rm \
-    -v $PWD:/data \
-    public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1 ribosome \
+cmd="docker exec -it \
+    dais-ribosome-1.2.1 ribosome \
     --module $MODULE $input ${dais_out}.seq ${dais_out}.ins ${dais_out}.del"
 
 echo $cmd
