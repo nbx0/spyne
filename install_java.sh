@@ -37,7 +37,7 @@ then
 		wget --no-check-certificate ${file} -O ${PACKAGE_ROOT}/${file_name}
 		sudo tar -zxf ${PACKAGE_ROOT}/${file_name} -C ${PACKAGE_ROOT}
 		i=$(($i+1))
-		#rm -rf ${PACKAGE_ROOT}/${file_name}
+		rm -rf ${PACKAGE_ROOT}/${file_name}
 	done
 
 	# return message to keep the process going
