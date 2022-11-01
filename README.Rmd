@@ -98,7 +98,7 @@ docker container ps
 
 
 CONTAINER ID   IMAGE                        COMMAND                       CREATED        STATUS        PORTS      NAMES
-b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0    "/bin/bash -c SC2-spike-seq"   5 hours ago    Up 5 hours               sc2-spike-seq-dev-1.0.0
+b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0    "/bin/bash -c snake-kickoff"   5 hours ago    Up 5 hours               sc2-spike-seq-dev-1.0.0
 ```
 
 **B. Build the production version**
@@ -144,13 +144,13 @@ docker container ps
 
 
 CONTAINER ID   IMAGE                        COMMAND                           CREATED        STATUS        PORTS      NAMES
-475741fd9bc7   sc2-spike-seq-prod:v1.0.0    "/bin/bash -c SC2-spike-seq"      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0
+475741fd9bc7   sc2-spike-seq-prod:v1.0.0    "/bin/bash -c snake-kickoff"      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0
 ```
 
 #### (7) Execute commands in **sc2-spike-seq** container
 
 ```
-docker exec -w /data -it sc2-spike-seq-prod-1.0.0 bash SC2-spike-seq <path to samplesheet.csv> <path to instrument run> <Nanopore run name>
+docker exec -w /data -it sc2-spike-seq-prod-1.0.0 bash snake-kickoff <path to samplesheet.csv> <path to instrument run> <Nanopore run name>
 ```
 
 #### (8) Execute commands in **irma-1.0.2p3** container
@@ -162,9 +162,6 @@ USAGE:
 (PAIRED-END):   IRMA <MODULE|MODULE-CONFIG> <R1.fastq.gz|R1.fastq> <R2.fastq.gz|R2.fastq> [path/to/]<sample_name>
 (SINGLE-END):   IRMA <MODULE|MODULE-CONFIG> <fastq|fastq.gz> [path/to/]<sample_name>
 ```
-
-
-
 
 <br>
 

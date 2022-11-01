@@ -455,7 +455,7 @@ reference</a></p>
 
 
 CONTAINER ID   IMAGE                        COMMAND                       CREATED        STATUS        PORTS      NAMES
-b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0    &quot;/bin/bash -c SC2-spike-seq&quot;   5 hours ago    Up 5 hours               sc2-spike-seq-dev-1.0.0</code></pre>
+b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0    &quot;/bin/bash -c snake-kickoff&quot;   5 hours ago    Up 5 hours               sc2-spike-seq-dev-1.0.0</code></pre>
 <p><strong>B. Build the production version</strong></p>
 <pre><code>docker build -t sc2-spike-seq-prod:v1.0.0 .</code></pre>
 <p><strong>-t</strong>: add a tag to an image such as the version of the
@@ -495,12 +495,12 @@ run reference</a></p>
 
 
 CONTAINER ID   IMAGE                        COMMAND                           CREATED        STATUS        PORTS      NAMES
-475741fd9bc7   sc2-spike-seq-prod:v1.0.0    &quot;/bin/bash -c SC2-spike-seq&quot;      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0</code></pre>
+475741fd9bc7   sc2-spike-seq-prod:v1.0.0    &quot;/bin/bash -c snake-kickoff&quot;      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0</code></pre>
 </div>
 <div id="execute-commands-in-sc2-spike-seq-container" class="section level4">
 <h4>(7) Execute commands in <strong>sc2-spike-seq</strong>
 container</h4>
-<pre><code>docker exec -w /data -it sc2-spike-seq-prod-1.0.0 bash SC2-spike-seq &lt;path to samplesheet.csv&gt; &lt;path to instrument run&gt; &lt;Nanopore run name&gt;</code></pre>
+<pre><code>docker exec -w /data -it sc2-spike-seq-prod-1.0.0 bash snake-kickoff &lt;path to samplesheet.csv&gt; &lt;path to instrument run&gt; &lt;Nanopore run name&gt;</code></pre>
 </div>
 <div id="execute-commands-in-irma-1.0.2p3-container" class="section level4">
 <h4>(8) Execute commands in <strong>irma-1.0.2p3</strong> container</h4>
