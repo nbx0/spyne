@@ -6,7 +6,7 @@ ARG BUILD_STAGE=${BUILD_STAGE:-prod}
 ############# Build Stage: Dependencies ##################
 
 # Start from a base image
-FROM python:3.7.6 as base
+FROM --platform=linux/amd64 python:3.7.6 as base
 
 # Define a system argument
 ARG DEBIAN_FRONTEND=interactive

@@ -20,8 +20,11 @@ java_path=`ls ${JAVA_ROOT}`
 
 for eachdir in ${java_path}
 do
+	echo $eachdir
 	export PATH=$PATH:${JAVA_ROOT}/${eachdir}/bin
 done
+
+java --version
 
 # Check commands that user provided
 case $1 in

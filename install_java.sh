@@ -32,10 +32,12 @@ then
 		echo $i
 		file=$(head -${i} ${java_clean} | tail -1 | sed 's,\r,,g')
 		echo $file
-		wget --no-check-certificate ${file} -O ${PACKAGE_ROOT}/fetched_package
-		sudo tar -zxf ${PACKAGE_ROOT}/fetched_package -C ${PACKAGE_ROOT}
+		file_name=`echo "$file" | awk -F "/" '{print $NF}'`
+		echo $file_name
+		wget --no-check-certificate ${file} -O ${PACKAGE_ROOT}/${file_name}
+		sudo tar -zxf ${PACKAGE_ROOT}/${file_name} -C ${PACKAGE_ROOT}
 		i=$(($i+1))
-		rm -rf ${PACKAGE_ROOT}/fetched_package
+		#rm -rf ${PACKAGE_ROOT}/${file_name}
 	done
 
 	# return message to keep the process going
