@@ -74,7 +74,7 @@ sc2-spike-seq-dev      v1.0.0     2c22887402d3    2 hours ago    1.49GB
 To run the `sc2-spike-seq-dev` container
 
 ```    
-docker run -v /path/to/data:/data -v /path/to/sc2-spike-seq:/sc2-spike-seq -v /var/run/docker.sock:/var/run/docker.sock --name sc2-spike-seq-dev-1.0.0 -t -d sc2-spike-seq-dev:v1.0.0 
+docker run -v /path/to/data:/data -v /path/to/sc2-spike-seq:/SC2-spike-seq -v /var/run/docker.sock:/var/run/docker.sock --name sc2-spike-seq-dev-1.0.0 -t -d sc2-spike-seq-dev:v1.0.0 
 ```
 
 **NOTE:** <br>
