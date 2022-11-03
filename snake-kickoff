@@ -28,10 +28,10 @@ java --version
 
 # Check commands that user provided
 case $1 in
-	"") python $1;;
+	"") echo "This is a help message!" ;;
 	*)
 		# Create config.yaml from samplesheet
-		python $RESOURCE_ROOT/scripts/config_create.py "$@"
+		python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
 	;;
 esac
 

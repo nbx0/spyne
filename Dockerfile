@@ -6,15 +6,20 @@ ARG BUILD_STAGE=${BUILD_STAGE:-prod}
 ############# Build Stage: Dependencies ##################
 
 # Start from a base image
-FROM --platform=linux/amd64 python:3.7.6 as base
+FROM --platform=linux/amd64 ubuntu:focal as base
 
 # Define a system argument
 ARG DEBIAN_FRONTEND=interactive
 
 # Install system libraries of general use
-RUN apt-get update --allow-releaseinfo-change && apt-get install -y --no-install-recommends build-essential \ 
+RUN apt-get update --allow-releaseinfo-change && apt-get install --no-install-recommends -y \
+    build-essential \ 
     iptables \
     libdevmapper1.02.1 \
+    python3.7\
+    python3-pip \
+    python3-setuptools \
+    python3-dev \
     dpkg \
     sudo \
     wget \
@@ -37,6 +42,9 @@ RUN mkdir /data
 
 # Allow permission to read and write files to data directory
 RUN chmod -R a+rwx /data
+
+# Copy all scripts to docker images
+COPY . /SC2-spike-seq
 
 ############# Build Stage: Production ##################
 
@@ -123,7 +131,7 @@ RUN bash /SC2-spike-seq/install_docker.sh
 COPY requirements.txt /SC2-spike-seq/requirements.txt
 
 # Install python requirements
-RUN pip install -r /SC2-spike-seq/requirements.txt
+RUN pip3 install -r /SC2-spike-seq/requirements.txt
 
 ############# Run SC2-spike-seq ##################
 
@@ -143,7 +151,5 @@ RUN chmod -R a+rwx /SC2-spike-seq
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Export bash script to path
-ENV PATH="$PATH:/SC2-spike-seq"
+ENV PATH "$PATH:/SC2-spike-seq"
 
-# Keep container running
-ENTRYPOINT ["/bin/bash", "-c", "snake-kickoff"]
