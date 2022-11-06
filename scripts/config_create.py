@@ -8,7 +8,7 @@ import os
 
 root = "/".join(abspath(__file__).split("/")[:-2])
 print("testing new dev changes")
-if len(argv) < 1:
+if len(argv) < 2:
     exit(
         "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type>\n".format(__file__)
     )
@@ -79,7 +79,13 @@ if "ont" in experiment_type.lower():
 else:
     snakefile_path += "illumina_influenza_snakefile"
 snake_cmd = (
-        "snakemake -s " + snakefile_path + " --configfile config.yaml --cores 4 "
+        "snakemake -s " + snakefile_path + 
+        " --configfile config.yaml \
+        --cores 4 	\
+        --printshellcmds \
+	    --restart-times 3 \
+	    --rerun-incomplete \
+	    --latency-wait 240 "
     )
 os.chdir(runpath.replace("fastq_pass", ""))
 subprocess.call(snake_cmd, shell=True)
