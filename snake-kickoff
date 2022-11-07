@@ -20,19 +20,16 @@ java_path=`ls ${JAVA_ROOT}`
 
 for eachdir in ${java_path}
 do
-	echo $eachdir
 	export PATH=$PATH:${JAVA_ROOT}/${eachdir}/bin
 done
 
+# Check the java version
 java --version
 
-# Check commands that user provided
-case $1 in
-	"") echo "This is a help message!" ;;
-	*)
-		# Create config.yaml from samplesheet
-		python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
-	;;
-esac
+# Check the docker version
+docker --version
+
+# Create config.yaml from samplesheet
+python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
 
 
