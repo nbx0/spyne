@@ -3,6 +3,7 @@
 *.Rmd
 *.html
 *.md
+*.Rhistory
 *docs
 Dockerfile
 .dockerignore

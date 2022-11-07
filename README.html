@@ -388,13 +388,6 @@ display: none;
 <code>docker pull public.ecr.aws/n3z8t4o2/irma:1.0.2p3</code> <br>  
 <strong>Dias-Ribosome</strong>:
 <code>docker pull public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1</code></p>
-<ul>
-<li>From a tarball</li>
-</ul>
-<p>  <strong>IRMA</strong>:
-<code>docker load -i containers/irma:1.0.2p3.tar</code> <br>  
-<strong>Dais-Ribosome</strong>:
-<code>docker load -i containers/dais-ribosome:1.2.1.tar</code></p>
 </div>
 <div id="run-irma-and-dais-ribosome-containers" class="section level4">
 <h4>(5) Run <strong>irma</strong> and <strong>dais-ribosome</strong>
@@ -403,28 +396,44 @@ containers</h4>
 <code>docker run -v /path/to/data:/data --name irma:1.0.2p3 -t -d public.ecr.aws/n3z8t4o2/irma:1.0.2p3</code>
 <br>   <strong>Dais-Ribosome</strong>:
 <code>docker run -v /path/to/data:/data --name dais-ribosome:1.2.1 -t -d public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1</code></p>
+<p><strong>NOTE:</strong> <br> - Change <strong>/path/to/data</strong>
+to your local directory where it contains all data files needed to feed
+into the <code>IRMA</code> and <code>Dais-ribosome</code> workflow. This
+directory is mounted to <code>/data</code> directory inside the
+container. <br></p>
 </div>
-<div id="build-sc2-spike-seq-image-and-container" class="section level4">
-<h4>(6) Build <strong>sc2-spike-seq</strong> image and container</h4>
+<div id="build-sc2-spike-seq-image-and-run-its-container" class="section level4">
+<h4>(6) Build <strong>sc2-spike-seq</strong> image and run its
+container</h4>
 <p><strong>NOTE:</strong> In the <code>SC2-seq-spike</code> directory,
 there is a <code>Dockerfile</code> that contains a list of instructions
 and steps of how to build and run the <code>sc2-spike-seq</code>
 workflow.</p>
 <p><strong>A. Build the development version</strong></p>
+<ul>
+<li>Using a build-arg</li>
+</ul>
 <pre><code>docker build -t sc2-spike-seq-dev:v1.0.0 --build-arg BUILD_STAGE=dev .</code></pre>
+<ul>
+<li>Using a specific dockerfile for development stage
+(e.g. <code>Dockerfile.dev</code>)</li>
+</ul>
+<pre><code>docker build -t sc2-spike-seq-dev:v1.0.0 -f Dockerfile.dev .</code></pre>
 <p><strong>-t</strong>: add a tag to an image such as the version of the
 application, e.g. <em>sc2-spike-seq-dev:v1.0.0</em> or
-<em>sc2-spike-seq-dev:latest</em> <br>
-<strong><code>--</code>build-arg</strong>: set the build stage for the
-docker image. In this case, we want to build the
-<strong>development</strong> stage. <br></p>
+<em>sc2-spike-seq-dev:latest</em> <br> <strong><code>--</code>file,
+-f</strong>: name of the Dockerfile <br>
+<strong><code>--</code>build-arg</strong>: set the build time variable
+for docker image. In this case, we want to build the
+<strong>development</strong> stage by setting build variable
+<code>BUILD_STAGE=dev</code>. <br></p>
 <p><em>The image took approximately &lt; 10 mins to build</em></p>
 <p>After the build is completed, you can check if the image is built
 successfully</p>
 <pre><code>docker images
 
 REPOSITORY             TAG        IMAGE ID        CREATED        SIZE
-sc2-spike-seq-dev      v1.0.0     2c22887402d3    2 hours ago    1.49GB</code></pre>
+sc2-spike-seq-dev      v1.0.0     2c22887402d3    2 hours ago    1.58GB</code></pre>
 <p>To run the <code>sc2-spike-seq-dev</code> container</p>
 <pre><code>docker run -v /path/to/data:/data -v /path/to/sc2-spike-seq:/sc2-spike-seq -v /var/run/docker.sock:/var/run/docker.sock --name sc2-spike-seq-dev-1.0.0 -t -d sc2-spike-seq-dev:v1.0.0 </code></pre>
 <p><strong>NOTE:</strong> <br> - Change <strong>/path/to/data</strong>
@@ -437,15 +446,13 @@ the code base needed to build the <code>sc2-spike-seq</code> workflow.
 <br> - <strong>/var/run/docker.sock:/var/run/docker.sock</strong> is
 used to connect the host’s docker.socket to container’s docker.socket
 where you can run a container inside of another container. <br></p>
-<p><strong>-d</strong>: run the container in detached mode <br>
-<strong>-v</strong>: mount code base and data files from host directory
-to container directory <strong>[host_div]:[container_dir]</strong>. By
-exposing the host directory to docker container, docker will be able to
-access data files within that mounted directory and use it to fire up
-the <code>sc2-spike-seq</code> workflow. <br> <strong>-p</strong>: map
-the host port to the container port and then all the requests that are
-made to the host port will be redirected to the Docker container
-<strong>[host_port]:[container_port]</strong> <br>
+<p><strong>-t</strong>: allocate a pseudo-tty <br> <strong>-d</strong>:
+run the container in detached mode <br> <strong>-v</strong>: mount code
+base and data files from host directory to container directory
+<strong>[host_div]:[container_dir]</strong>. By exposing the host
+directory to docker container, docker will be able to access data files
+within that mounted directory and use it to fire up the
+<code>sc2-spike-seq</code> workflow. <br>
 <strong><code>--</code>name</strong>: give an identity to the container
 <br></p>
 <p>For more information about the Docker syntax, see <a href="https://docs.docker.com/engine/reference/run/">Docker run
@@ -454,20 +461,29 @@ reference</a></p>
 <pre><code>docker container ps
 
 
-CONTAINER ID   IMAGE                        COMMAND                       CREATED        STATUS        PORTS      NAMES
-b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0    &quot;/bin/bash -c snake-kickoff&quot;   5 hours ago    Up 5 hours               sc2-spike-seq-dev-1.0.0</code></pre>
+CONTAINER ID   IMAGE                        COMMAND        CREATED         STATUS        PORTS      NAMES
+b37b6b19c4e8   sc2-spike-seq-dev:v1.0.0     &quot;bash&quot;         5 hours ago     Up 5 hours               sc2-spike-seq-dev-1.0.0</code></pre>
 <p><strong>B. Build the production version</strong></p>
+<ul>
+<li>By default</li>
+</ul>
 <pre><code>docker build -t sc2-spike-seq-prod:v1.0.0 .</code></pre>
+<ul>
+<li>Using a specific dockerfile for production stage
+(e.g. <code>Dockerfile.prod</code>)</li>
+</ul>
+<pre><code>docker build -t sc2-spike-seq-prod:v1.0.0 -f Dockerfile.prod .</code></pre>
 <p><strong>-t</strong>: add a tag to an image such as the version of the
 application, e.g. <em>sc2-spike-seq-prod:v1.0.0</em> or
-<em>sc2-spike-seq-prod:latest</em> <br></p>
+<em>sc2-spike-seq-prod:latest</em> <br> <strong><code>--</code>file,
+-f</strong>: name of the Dockerfile</p>
 <p><em>The image took approximately &lt; 10 mins to build</em></p>
 <p>After the build is completed, you can check if the image is built
 successfully</p>
 <pre><code>docker images
 
 REPOSITORY             TAG        IMAGE ID        CREATED        SIZE
-sc2-spike-seq-prod     v1.0.0     2c22887402d3    2 hours ago    1.49GB</code></pre>
+sc2-spike-seq-prod     v1.0.0     c436f88dcd2f    2 hours ago    1.58GB</code></pre>
 <p>To run the <code>sc2-spike-seq-prod</code> container</p>
 <pre><code>docker run -v /path/to/data:/data -v /var/run/docker.sock:/var/run/docker.sock --name sc2-spike-seq-prod-1.0.0 -t -d sc2-spike-seq-prod:v1.0.0 </code></pre>
 <p><strong>NOTE:</strong> <br> - Change <strong>/path/to/data</strong>
@@ -477,15 +493,13 @@ to <code>/data</code> directory inside the container. <br> -
 <strong>/var/run/docker.sock:/var/run/docker.sock</strong> is used to
 connect the host’s docker.socket to container’s docker.socket where you
 can run a container inside of another container. <br></p>
-<p><strong>-d</strong>: run the container in detached mode <br>
-<strong>-v</strong>: mount code base and data files from host directory
-to container directory <strong>[host_div]:[container_dir]</strong>. By
-exposing the host directory to docker container, docker will be able to
-access data files within that mounted directory and use it to fire up
-the <code>sc2-spike-seq</code> workflow. <br> <strong>-p</strong>: map
-the host port to the container port and then all the requests that are
-made to the host port will be redirected to the Docker container
-<strong>[host_port]:[container_port]</strong> <br>
+<p><strong>-t</strong>: allocate a pseudo-tty <br> <strong>-d</strong>:
+run the container in detached mode <br> <strong>-v</strong>: mount code
+base and data files from host directory to container directory
+<strong>[host_div]:[container_dir]</strong>. By exposing the host
+directory to docker container, docker will be able to access data files
+within that mounted directory and use it to fire up the
+<code>sc2-spike-seq</code> workflow. <br>
 <strong><code>--</code>name</strong>: give an identity to the container
 <br></p>
 <p>For more information about the Docker syntax, see <a href>Docker
@@ -494,21 +508,25 @@ run reference</a></p>
 <pre><code>docker container ps
 
 
-CONTAINER ID   IMAGE                        COMMAND                           CREATED        STATUS        PORTS      NAMES
-475741fd9bc7   sc2-spike-seq-prod:v1.0.0    &quot;/bin/bash -c snake-kickoff&quot;      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0</code></pre>
+CONTAINER ID   IMAGE                        COMMAND     CREATED        STATUS        PORTS      NAMES
+475741fd9bc7   sc2-spike-seq-prod:v1.0.0    &quot;bash&quot;      5 hours ago    Up 5 hours               sc2-spike-seq-prod-1.0.0</code></pre>
 </div>
-<div id="execute-commands-in-sc2-spike-seq-container" class="section level4">
-<h4>(7) Execute commands in <strong>sc2-spike-seq</strong>
+<div id="to-execute-snakemake-pipeline-inside-sc2-spike-seq-prod-1.0.0-container" class="section level4">
+<h4>(7) To execute snakemake pipeline inside
+<strong>sc2-spike-seq-prod-1.0.0</strong> container</h4>
+<pre><code>docker exec -w /data sc2-spike-seq-prod-1.0.0 bash snake-kickoff &lt;path/to/samplesheet.csv&gt; &lt;runpath&gt; &lt;experiment_type&gt;</code></pre>
+</div>
+<div id="to-execute-irma-pipeline-inside-irma-1.0.2p3-container" class="section level4">
+<h4>(8) To execute irma pipeline inside <strong>irma-1.0.2p3</strong>
 container</h4>
-<pre><code>docker exec -w /data -it sc2-spike-seq-prod-1.0.0 bash snake-kickoff &lt;path to samplesheet.csv&gt; &lt;path to instrument run&gt; &lt;Nanopore run name&gt;</code></pre>
-</div>
-<div id="execute-commands-in-irma-1.0.2p3-container" class="section level4">
-<h4>(8) Execute commands in <strong>irma-1.0.2p3</strong> container</h4>
-<pre><code>docker exec -w /data irma-1.0.2p3 
-
-USAGE:
-(PAIRED-END):   IRMA &lt;MODULE|MODULE-CONFIG&gt; &lt;R1.fastq.gz|R1.fastq&gt; &lt;R2.fastq.gz|R2.fastq&gt; [path/to/]&lt;sample_name&gt;
-(SINGLE-END):   IRMA &lt;MODULE|MODULE-CONFIG&gt; &lt;fastq|fastq.gz&gt; [path/to/]&lt;sample_name&gt;</code></pre>
+<ul>
+<li>FOR PAIRED-END</li>
+</ul>
+<pre><code>docker exec -w /data irma-1.0.2p3 IRMA &lt;MODULE|MODULE-CONFIG&gt; &lt;R1.fastq.gz|R1.fastq&gt; &lt;R2.fastq.gz|R2.fastq&gt; [path/to/]&lt;sample_name&gt;</code></pre>
+<ul>
+<li>For SINGLE-END</li>
+</ul>
+<pre><code>docker exec -w /data irma-1.0.2p3 IRMA &lt;MODULE|MODULE-CONFIG&gt; &lt;fastq|fastq.gz&gt; [path/to/]&lt;sample_name&gt;</code></pre>
 <p><br></p>
 <p>Any questions or issues? Please report them on our <a href="https://github.com/nbx0/SC2-spike-seq/issues">github
 issues</a></p>
