@@ -36,7 +36,7 @@ git checkout container_init
 
 - From a docker registry
 
-&emsp; **BR**: `docker pull public.ecr.aws/n3z8t4o2/irma:1.0.2p3` <br>
+&emsp; **IRMA**: `docker pull public.ecr.aws/n3z8t4o2/irma:1.0.2p3` <br>
 &emsp; **Dias-Ribosome**: `docker pull public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1`
 
 #### (5) Run **irma** and **dais-ribosome** containers

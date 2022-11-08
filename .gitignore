@@ -2,3 +2,4 @@
 *IRMA/*
 .snakemake
 .vscode/
+.Rhistory
