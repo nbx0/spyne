@@ -5,9 +5,7 @@
 *.md
 *.Rhistory
 *docs
-Dockerfile
-.dockerignore
 docker.compose.yml
 containers
-tests
 envs
+tests
