@@ -4,6 +4,7 @@ from sys import argv, path, exit, executable
 import os.path as op
 import plotly.graph_objects as go
 import plotly.express as px
+import plotly.io as pio
 
 path.append(op.dirname(op.realpath(__file__)))
 import irma2pandas  # type: ignore
@@ -59,9 +60,8 @@ def createheatmap(irma_path, coverage_means_df):
     )
     fig.update_layout(legend=dict(x=0.4, y=1.2, orientation="h"))
     fig.update_xaxes(side="top")
-    with open(f"{irma_path}/heatmap.json", "w") as out:
-        print(fig.to_plotly_json(), file=out)
-        print(f"  -> coverage heatmap json saved to {out.name}")
+    pio.write_json(fig, f"{irma_path}/heatmap.json")
+    print(f"  -> coverage heatmap json saved to {irma_path}/heatmap.json")
 
 
 def createsankey(irma_path, read_df):
@@ -70,9 +70,8 @@ def createsankey(irma_path, read_df):
         sankeyfig = irma2pandas.dash_reads_to_sankey(
             read_df[read_df["Sample"] == sample]
         )
-        with open(f"{irma_path}/readsfig_{sample}.json", "w") as out:
-            print(sankeyfig.to_plotly_json(), file=out)
-            print(f"  -> read sankey plot json saved to {out.name}")
+        pio.write_json(sankeyfig, f"{irma_path}/readsfig_{sample}.json")
+        print(f"  -> read sankey plot json saved to {irma_path}/readsfig_{sample}.json")
 
 
 def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
@@ -179,15 +178,13 @@ def createcoverageplot(irma_path, coverage_df, segments, segcolor):
         coveragefig = createSampleCoverageFig(
             sample, coverage_df, segments, segcolor, False
         )
-        with open(f"{irma_path}/coveragefig_{sample}_linear.json", "w") as out:
-            print(coveragefig.to_plotly_json(), file=out)
-            print(f"  -> saved {out.name}")
+        pio.write_json(coveragefig, f"{irma_path}/coveragefig_{sample}_linear.json")
+        print(f"  -> saved {irma_path}/coveragefig_{sample}_linear.json")
         coveragefig = createSampleCoverageFig(
             sample, coverage_df, segments, segcolor, True
         )
-        with open(f"{irma_path}/coveragefig_{sample}_log.json", "w") as out:
-            print(coveragefig.to_plotly_json(), file=out)
-            print(f"  -> saved {out.name}")
+        pio.write_json(coveragefig, f"{irma_path}/coveragefig_{sample}_log.json")
+        print(f"  -> saved {irma_path}/coveragefig_{sample}_log.json")
     print(f" --> All coverage jsons saved")
 
 
@@ -202,22 +199,22 @@ def generate_dfs(irma_path):
     coverage_df = irma2pandas.dash_irma_coverage_df(irma_path)
     with open(f"{irma_path}/coverage.json", "w") as out:
         coverage_df.to_json(out, orient="split", double_precision=3)
-        print("  -> coverage_df saved to {out.name}")
+        print(f"  -> coverage_df saved to {out.name}")
     print("Building read_df")
     read_df = irma2pandas.dash_irma_reads_df(irma_path)
     with open(f"{irma_path}/reads.json", "w") as out:
         read_df.to_json(out, orient="split", double_precision=3)
-        print("  -> read_df saved to {out.name}")
+        print(f"  -> read_df saved to {out.name}")
     print("Building alleles_df")
     alleles_df = irma2pandas.dash_irma_alleles_df(irma_path)
     with open(f"{irma_path}/alleles.json", "w") as out:
         alleles_df.to_json(out, orient="split", double_precision=3)
-        print("  -> alleles_df saved to {out.name}")
+        print(f"  -> alleles_df saved to {out.name}")
     print("Building indels_df")
     indels_df = irma2pandas.dash_irma_indels_df(irma_path)
     with open(f"{irma_path}/indels.json", "w") as out:
         indels_df.to_json(out, orient="split", double_precision=3)
-        print("  -> indels_df saved to {out.name}")
+        print(f"  -> indels_df saved to {out.name}")
     print("Building ref_data")
     ref_lens = irma2pandas.reference_lens(irma_path)
     segments, segset, segcolor = irma2pandas.returnSegData(coverage_df)
@@ -231,12 +228,12 @@ def generate_dfs(irma_path):
             },
             out,
         )
-        print("  -> ref_data saved to {out.name}")
+        print(f"  -> ref_data saved to {out.name}")
     print("Building dais_vars_df")
     dais_vars_df = dais2pandas.compute_dais_variants(f"{irma_path}/dais_results")
     with open(f"{irma_path}/dais_vars.json", "w") as out:
         dais_vars_df.to_json(out, orient="split", double_precision=3)
-        print("  -> dais_vars_df saved to {out.name}")
+        print(f"  -> dais_vars_df saved to {out.name}")
     return read_df, coverage_df, segments, segcolor
 
 
