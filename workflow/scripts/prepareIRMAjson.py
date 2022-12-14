@@ -5,16 +5,17 @@ import os.path as op
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
+from dash import html
 
 path.append(op.dirname(op.realpath(__file__)))
 import irma2pandas  # type: ignore
 import dais2pandas  # type: ignore
 
 try:
-    irma_path = argv[1]
+    irma_path, samplesheet = argv[1], argv[2]
 except IndexError:
     exit(
-        f"\n\tUSAGE: python {__file__} <path/to/irma/results/>\n"
+        f"\n\tUSAGE: python {__file__} <path/to/irma/results/> <samplesheet>\n"
         f"\n\t\t*Inside path/to/irma/results should be the individual samples-irma-dir results\n"
         f"\n\tYou entered:\n\t{executable} {' '.join(argv)}\n\n"
     )
@@ -234,7 +235,126 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/dais_vars.json", "w") as out:
         dais_vars_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> dais_vars_df saved to {out.name}")
+    print("Building irma_summary_df")
+    irma_summary_df = irma_summary(
+        irma_path, samplesheet, read_df, indels_df, alleles_df, coverage_df, ref_lens
+    )
+    with open(f"{irma_path}/irma_summary.json", "w") as out:
+        irma_summary_df.to_json(out, orient="split", double_precision=3)
+        print(f"  -> irma_summary_df saved to {out.name}")
     return read_df, coverage_df, segments, segcolor
+
+
+def negative_qc_statement(irma_reads_df, negative_list=""):
+    if negative_list == "":
+        sample_list = list(irma_reads_df["Sample"].unique())
+        negative_list = [i for i in sample_list if "PCR" in i]
+    irma_reads_df = irma_reads_df.pivot("Sample", columns="Record", values="Reads")
+    if "3-altmatch" in irma_reads_df.columns:
+        irma_reads_df["Percent Mapping"] = (
+            irma_reads_df["3-match"] + irma_reads_df["3-altmatch"]
+        ) / irma_reads_df["1-initial"]
+    else:
+        irma_reads_df["Percent Mapping"] = (
+            irma_reads_df["3-match"] / irma_reads_df["1-initial"]
+        )
+    irma_reads_df = irma_reads_df.fillna(0)
+    statement_dic = {"passes QC": {}, "FAILS QC": {}}
+    for s in negative_list:
+        reads_mapping = irma_reads_df.loc[s, "Percent Mapping"] * 100
+        if reads_mapping >= 0.01:
+            statement_dic["FAILS QC"][s] = f"{reads_mapping:.2f}"
+        else:
+            statement_dic["passes QC"][s] = f"{reads_mapping:.2f}"
+    return statement_dic
+
+
+def irma_summary(
+    irma_path, samplesheet, reads_df, indels_df, alleles_df, coverage_df, ref_lens
+):
+    ss_df = pd.read_csv(samplesheet)
+    neg_controls = list(ss_df[ss_df["Sample Type"] == "- Control"]["Sample ID"])
+    qc_statement = negative_qc_statement(reads_df, neg_controls)
+    with open(f"{irma_path}/qc_statement.json", "w") as out:
+        json.dump(qc_statement, out)
+    reads_df = (
+        reads_df[reads_df["Record"].str.contains("^1|^2-p|^4")]
+        .pivot("Sample", columns="Record", values="Reads")
+        .reset_index()
+        .melt(id_vars=["Sample", "1-initial", "2-passQC"])
+        .rename(
+            columns={
+                "1-initial": "Total Reads",
+                "2-passQC": "Pass QC",
+                "Record": "Reference",
+                "value": "Reads Mapped",
+            }
+        )
+    )
+    reads_df = reads_df[~reads_df["Reads Mapped"].isnull()]
+    reads_df["Reference"] = reads_df["Reference"].map(lambda x: x[2:])
+    reads_df[["Total Reads", "Pass QC", "Reads Mapped"]] = (
+        reads_df[["Total Reads", "Pass QC", "Reads Mapped"]]
+        .astype("int")
+        .applymap(lambda x: f"{x:,d}")
+    )
+    reads_df = reads_df[
+        ["Sample", "Total Reads", "Pass QC", "Reads Mapped", "Reference"]
+    ]
+    indels_df = (
+        indels_df[indels_df["Frequency"] >= 0.05]
+        .groupby(["Sample", "Reference"])
+        .agg({"Sample": "count"})
+        .rename(columns={"Sample": "Count of Minor Indels >= 0.05"})
+        .reset_index()
+    )
+    alleles_df = (
+        alleles_df[alleles_df["Minority Frequency"] >= 0.05]
+        .groupby(["Sample", "Reference"])
+        .agg({"Sample": "count"})
+        .rename(columns={"Sample": "Count of Minor SNVs >= 0.05"})
+        .reset_index()
+    )
+    cov_ref_lens = (
+        coverage_df[~coverage_df["Consensus"].isin(["-", "N", "a", "c", "t", "g"])]
+        .groupby(["Sample", "Reference_Name"])
+        .agg({"Sample": "count"})
+        .rename(columns={"Sample": "maplen"})
+        .reset_index()
+    )
+
+    def perc_len(maplen, ref):
+        return maplen / ref_lens[ref] * 100
+
+    cov_ref_lens["% Reference Covered"] = cov_ref_lens.apply(
+        lambda x: perc_len(x["maplen"], x["Reference_Name"]), axis=1
+    )
+    cov_ref_lens["% Reference Covered"] = cov_ref_lens["% Reference Covered"].map(
+        lambda x: f"{x:.2f}"
+    )
+    cov_ref_lens = cov_ref_lens[
+        ["Sample", "Reference_Name", "% Reference Covered"]
+    ].rename(columns={"Reference_Name": "Reference"})
+    coverage_df = (
+        coverage_df.groupby(["Sample", "Reference_Name"])
+        .agg({"Coverage Depth": "mean"})
+        .reset_index()
+        .rename(
+            columns={"Coverage Depth": "Mean Coverage", "Reference_Name": "Reference"}
+        )
+    )
+    coverage_df["Mean Coverage"] = (
+        coverage_df[["Mean Coverage"]].astype("int").applymap(lambda x: f"{x:,d}")
+    )
+    summary_df = (
+        reads_df.merge(cov_ref_lens, "left")
+        .merge(coverage_df, "left")
+        .merge(alleles_df, "left")
+        .merge(indels_df, "left")
+        .fillna(0)
+    )
+    return summary_df
+
 
 
 if __name__ == "__main__":
