@@ -74,6 +74,13 @@ def createsankey(irma_path, read_df):
         pio.write_json(sankeyfig, f"{irma_path}/readsfig_{sample}.json")
         print(f"  -> read sankey plot json saved to {irma_path}/readsfig_{sample}.json")
 
+def createReadPieFigure(irma_path, read_df):
+    print(f"Building barcode distribution pie figure")
+    read_df = read_df[read_df['Record'] == '1-initial']
+    fig = px.pie(read_df, values='Reads', names='Sample')
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.write_json(f"{irma_path}/barcode_distribution.json")
+    print(f"  -> barcode distribution pie figure saved to {irma_path}/barcode_distribution.json")
 
 def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
     if "Coverage_Depth" in df.columns:
@@ -203,6 +210,7 @@ def generate_dfs(irma_path):
         print(f"  -> coverage_df saved to {out.name}")
     print("Building read_df")
     read_df = irma2pandas.dash_irma_reads_df(irma_path)
+    createReadPieFigure(irma_path, read_df)
     with open(f"{irma_path}/reads.json", "w") as out:
         read_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> read_df saved to {out.name}")

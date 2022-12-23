@@ -10,7 +10,9 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin'
+        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()), 
+        'DAIS_ribosome_output.fin', 
+        'IRMA/prepareIRMAjson.fin'
     shell:
         #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT flu'
         "echo DONEDONE"
@@ -19,12 +21,12 @@ rule gather_fastqs:
     input:
         "config.yaml"
     output:
-        temp("IRMA/cat_{barcode}.fastq.gz")
+        fq = temp("IRMA/cat_{barcode}.fastq.gz")
     message: "Step 1 - merging all read files into a single file"
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat fastq_pass/{params.barcode_number}/*fastq* > {output}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq}"
 
 rule barcode_trim_left:
     input:
@@ -126,7 +128,7 @@ rule irma:
     input:
         ancient("IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq")
     output:
-        temp(touch("IRMA/{barcode}.irma.fin"))
+        touch("IRMA/{barcode}.irma.fin")
     log:
         out = "logs/{barcode}.irma.stdout.log",
         err = "logs/{barcode}.irma.stderr.log"
@@ -176,7 +178,7 @@ rule catfiles:
     input:
         expand('IRMA/{barcode}.irma.decision', barcode=config["barcodes"].keys())
     output:
-        temp("DAIS_ribosome_input.fasta")
+        "DAIS_ribosome_input.fasta"
     message: "Step 6 - Collecting consensus genomes"
     shell:
         "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
@@ -190,9 +192,18 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
 
-
+rule prepareIRMAjson:
+    input:
+        rules.dais_ribosome.output
+    output:
+        temp(touch('IRMA/prepareIRMAjson.fin'))
+    message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
+    log:
+        "logs/prepareIRMAjson.log"
+    shell:
+        "python {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv"
 
 rule finishup:
     input:
