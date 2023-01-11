@@ -203,7 +203,7 @@ rule prepareIRMAjson:
     log:
         "logs/prepareIRMAjson.log"
     shell:
-        "python {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv"
+        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv"
 
 rule finishup:
     input:
