@@ -2,3 +2,4 @@ cutadapt==4.1
 snakemake==7.16.1
 pandas==1.0.5
 pyyaml==6.0
+numpy==1.19.0
