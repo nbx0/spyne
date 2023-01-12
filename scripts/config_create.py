@@ -77,9 +77,11 @@ if "ont" in experiment_type.lower():
         snakefile_path += "sc2_spike_snakefile"
 else:
     snakefile_path += "illumina_influenza_snakefile"
+
+
 snake_cmd = (
-        "snakemake -s " + snakefile_path + 
-        " --configfile config.yaml \
+        f"snakemake -s {snakefile_path} \
+        --configfile config.yaml \
         --cores 4 	\
         --printshellcmds \
 	    --restart-times 10 \
@@ -87,5 +89,6 @@ snake_cmd = (
 	    --latency-wait 600 "
     )
 os.chdir(runpath.replace("fastq_pass", ""))
+print(f"\n\nSNAKEMAKE CMD:\n {snake_cmd}\n\n")
 subprocess.call(snake_cmd, shell=True)
 

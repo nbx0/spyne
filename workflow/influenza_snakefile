@@ -147,7 +147,7 @@ checkpoint checkirma:
     input:
         ancient('IRMA/{barcode}.irma.fin')
     output:
-        temp('IRMA/{barcode}.irma.decision')
+        'IRMA/{barcode}.irma.decision'
     log:
         "logs/irma/checkirma_{barcode}.log"
     shell:
