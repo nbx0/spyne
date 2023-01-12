@@ -10,7 +10,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin'
+        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin', 'IRMA/prepareIRMAjson.fin'
     shell:
         'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT spike'
 
@@ -18,12 +18,12 @@ rule gather_fastqs:
     input:
         "config.yaml"
     output:
-        "IRMA/cat_{barcode}.fastq.gz"
+        fq = "IRMA/cat_{barcode}.fastq.gz"
     message: "Step 1 - merging all read files into a single file"
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat fastq_pass/{params.barcode_number}/*fastq* > {output}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq}"
 
 
 rule barcode_trim_left:
@@ -198,6 +198,16 @@ rule dais_ribosome:
     shell:
         "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m BETACORONAVIRUS && touch {output} || touch {output}"
 
+rule prepareIRMAjson:
+    input:
+        rules.dais_ribosome.output
+    output:
+        temp(touch('IRMA/prepareIRMAjson.fin'))
+    message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
+    log:
+        "logs/prepareIRMAjson.log"
+    shell:
+        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv"
 
 
 rule finishup:

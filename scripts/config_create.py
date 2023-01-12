@@ -7,7 +7,6 @@ import subprocess
 import os
 
 root = "/".join(abspath(__file__).split("/")[:-2])
-print("testing new dev changes")
 if len(argv) < 2:
     exit(
         "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type>\n".format(__file__)
@@ -69,7 +68,7 @@ else:
 with open(runpath.replace("fastq_pass", "") + "/config.yaml", "w") as out:
     yaml.dump(data, out, default_flow_style=False)
 
-snakefile_path = "/SC2-spike-seq/workflow/"
+snakefile_path = f"{root}/workflow/"
 if "ont" in experiment_type.lower():
 
     if "flu" in experiment_type.lower():
@@ -83,9 +82,9 @@ snake_cmd = (
         " --configfile config.yaml \
         --cores 4 	\
         --printshellcmds \
-	    --restart-times 3 \
+	    --restart-times 10 \
 	    --rerun-incomplete \
-	    --latency-wait 240 "
+	    --latency-wait 600 "
     )
 os.chdir(runpath.replace("fastq_pass", ""))
 subprocess.call(snake_cmd, shell=True)
