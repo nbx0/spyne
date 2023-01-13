@@ -114,12 +114,12 @@ rule subsample:
         err = "logs/{barcode}.reformat.stderr.log"
     group:
         "trim-map"
-    message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
+    message: "Step 4b - subsampling cleaned up read if excess > 5K exist"
     shell:
         "reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=1000000"
+        " samplereadstarget=5000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
