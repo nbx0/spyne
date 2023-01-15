@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy
 import json
 from sys import argv, path, exit, executable
 import os.path as op
@@ -6,19 +7,62 @@ import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
 from dash import html
+import yaml
 
 path.append(op.dirname(op.realpath(__file__)))
 import irma2pandas  # type: ignore
 import dais2pandas  # type: ignore
 
 try:
-    irma_path, samplesheet = argv[1], argv[2]
+    irma_path, samplesheet, platform, virus = argv[1], argv[2], argv[3], argv[4]
 except IndexError:
     exit(
-        f"\n\tUSAGE: python {__file__} <path/to/irma/results/> <samplesheet>\n"
+        f"\n\tUSAGE: python {__file__} <path/to/irma/results/> <samplesheet> <ont|illumina> <flu|sc2>\n"
         f"\n\t\t*Inside path/to/irma/results should be the individual samples-irma-dir results\n"
         f"\n\tYou entered:\n\t{executable} {' '.join(argv)}\n\n"
     )
+
+# Load qc config:
+with open(
+    op.dirname(op.dirname(op.realpath(__file__))) + "/irma_config/qc_pass_fail_settings.yaml"
+) as y:
+    qc_values = yaml.safe_load(y)
+
+proteins = {
+    "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a M N ORF3a E",
+    "flu": "PB1-F2 HA M1 NP HA1 BM2 NB PB2 NEP PB1 HA-signal PA-X NS1 M2 NA PA",
+}
+ref_proteins = {
+    "ORF10": "SARS-CoV-2",
+    "S": "SARS-CoV-2",
+    "orf1ab": "SARS-CoV-2",
+    "ORF6": "SARS-CoV-2",
+    "ORF8": "SARS-CoV-2",
+    "ORF7a": "SARS-CoV-2",
+    "M": "SARS-CoV-2",
+    "N": "SARS-CoV-2",
+    "ORF3a": "SARS-CoV-2",
+    "E": "SARS-CoV-2",
+    "PB1-F2": "A_PB1 B_PB1",
+    "HA": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
+        A_HA_H2 A_HA_H3 A_HA_H4 A_HA_H5 A_HA_H6 A_HA_H7 A_HA_H8 A_HA_H9 B_HA",
+    "M1": "A_MP B_MP",
+    "NP": "A_NP B_NP",
+    "HA1": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
+        A_HA_H2 A_HA_H3 A_HA_H4 A_HA_H5 A_HA_H6 A_HA_H7 A_HA_H8 A_HA_H9 B_HA",
+    "BM2": "B_MP",
+    "NB": "B_MP",
+    "PB2": "A_PB2 B_PB2",
+    "NEP": "A_NS B_NS",
+    "PB1": "A_PB1 B_PB1",
+    "HA-signal": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
+        A_HA_H2 A_HA_H3 A_HA_H4 A_HA_H5 A_HA_H6 A_HA_H7 A_HA_H8 A_HA_H9 B_HA",
+    "PA-X": "A_PA B_PA",
+    "NS1": "A_NS B_NS",
+    "M2": "A_MP B_MP",
+    "NA": "A_NA_N1 A_NA_N2 A_NA_N3 A_NA_N4 A_NA_N5 A_NA_N6 A_NA_N7 A_NA_N8 A_NA_N9 B_NA",
+    "PA": "A_PA B_PA",
+}
 
 
 def pivot4heatmap(coverage_df):
@@ -44,9 +88,12 @@ def createheatmap(irma_path, coverage_means_df):
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
+    coverage_means_df[cov_header] = coverage_means_df[cov_header].fillna(0)
     cov_max = coverage_means_df[cov_header].max()
     if cov_max <= 200:
         cov_max = 200
+    elif cov_max >= 1000:
+        cov_max = 1000
     fig = go.Figure(
         data=go.Heatmap(  # px.imshow(df5
             x=list(coverage_means_df["Sample"]),
@@ -56,7 +103,7 @@ def createheatmap(irma_path, coverage_means_df):
             zmid=100,
             zmax=cov_max,
             colorscale="Blugrn",
-            hovertemplate="%{y} = %{z:,.0f}x<extra>%{x}<br></extra>",
+            hovertemplate="%{y} = %{z:,.0f}x<extra>%{x}<br></extra>"
         )
     )
     fig.update_layout(legend=dict(x=0.4, y=1.2, orientation="h"))
@@ -64,6 +111,31 @@ def createheatmap(irma_path, coverage_means_df):
     pio.write_json(fig, f"{irma_path}/heatmap.json")
     print(f"  -> coverage heatmap json saved to {irma_path}/heatmap.json")
 
+def create_passfail_heatmap(irma_path, pass_fail_df):
+    print("Building pass_fail_heatmap")
+    pass_fail_df = pass_fail_df.reset_index().melt(id_vars=["Sample"], value_name="Reasons")
+    def assign_number(reason):
+        if reason == 'Pass':
+            return numpy.nan
+        else:
+            return len(reason.split(';'))
+    pass_fail_df['Number'] = pass_fail_df['Reasons'].apply(lambda x: assign_number(x))
+    fig = go.Figure(data=go.Heatmap(
+        x=list(pass_fail_df["Sample"]),
+        y=list(pass_fail_df["Reference"]),
+        z=list(pass_fail_df["Number"]),
+        customdata=list(pass_fail_df['Reasons']),
+        zmin=-4,
+        zmax=4,
+        zmid=-1,
+        colorscale='ylorrd',
+        hovertemplate="%{x}<br>%{customdata}<extra>%{y}<br></extra>"
+    ))
+    fig.update_xaxes(side="top")
+    fig.update_traces(showscale=False)
+    fig.update_layout(paper_bgcolor='white', plot_bgcolor='white')
+    pio.write_json(fig, f"{irma_path}/pass_fail_heatmap.json")
+    print(f"  -> pass_fail heatmap json saved to {irma_path}/pass_fail_heatmap.json")
 
 def createsankey(irma_path, read_df):
     print(f"Building read sankey plot")
@@ -74,13 +146,17 @@ def createsankey(irma_path, read_df):
         pio.write_json(sankeyfig, f"{irma_path}/readsfig_{sample}.json")
         print(f"  -> read sankey plot json saved to {irma_path}/readsfig_{sample}.json")
 
+
 def createReadPieFigure(irma_path, read_df):
     print(f"Building barcode distribution pie figure")
-    read_df = read_df[read_df['Record'] == '1-initial']
-    fig = px.pie(read_df, values='Reads', names='Sample')
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    read_df = read_df[read_df["Record"] == "1-initial"]
+    fig = px.pie(read_df, values="Reads", names="Sample")
+    fig.update_traces(textposition="inside", textinfo="percent+label")
     fig.write_json(f"{irma_path}/barcode_distribution.json")
-    print(f"  -> barcode distribution pie figure saved to {irma_path}/barcode_distribution.json")
+    print(
+        f"  -> barcode distribution pie figure saved to {irma_path}/barcode_distribution.json"
+    )
+
 
 def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
     if "Coverage_Depth" in df.columns:
@@ -196,9 +272,10 @@ def createcoverageplot(irma_path, coverage_df, segments, segcolor):
     print(f" --> All coverage jsons saved")
 
 
-def generate_figs(irma_path, read_df, coverage_df, segments, segcolor):
+def generate_figs(irma_path, read_df, coverage_df, segments, segcolor, pass_fail_df):
     createsankey(irma_path, read_df)
     createheatmap(irma_path, pivot4heatmap(coverage_df))
+    create_passfail_heatmap(irma_path, pass_fail_df)
     createcoverageplot(irma_path, coverage_df, segments, segcolor)
 
 
@@ -250,7 +327,12 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/irma_summary.json", "w") as out:
         irma_summary_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> irma_summary_df saved to {out.name}")
-    return read_df, coverage_df, segments, segcolor
+    print("Building pass_fail_df")
+    pass_fail_df = pass_fail_qc_df(irma_summary_df, dais_vars_df)
+    with open(f"{irma_path}/pass_fail_qc.json", "w") as out:
+        pass_fail_df.to_json(out, orient="split", double_precision=3)
+        print(f"  -> pass_fail_qc_df saved to {out.name}")
+    return read_df, coverage_df, segments, segcolor, pass_fail_df
 
 
 def negative_qc_statement(irma_reads_df, negative_list=""):
@@ -277,6 +359,92 @@ def negative_qc_statement(irma_reads_df, negative_list=""):
     return statement_dic
 
 
+def which_ref(sample, protein, ref_protein_dic, irma_summary_df):
+    try:
+        return list(
+            set(
+                irma_summary_df[irma_summary_df["Sample"] == sample]["Reference"]
+            ).intersection(set(ref_protein_dic[protein].split()))
+        )[0]
+    except IndexError:
+        print(
+            f"no match found for either sample=={sample} in irma_summary_df\n or protein=={protein} in ref_proteins"
+        )
+    except ValueError:
+        return numpy.nan
+
+
+def pass_fail_qc_df(irma_summary_df, dais_vars_df):
+    if not qc_values[platform]["allow_stop_codons"]:
+        pre_stop_df = dais_vars_df[dais_vars_df["AA Variants"].str.contains("[0-9]\*")][
+            ["Sample", "Protein"]
+        ]
+    else:
+        pre_stop_df = pd.DataFrame(columns=["Sample", "Protein"])
+    pre_stop_df["Reason_a"] = "Premature stop codon"
+    if virus == "flu":
+        pre_stop_df["Sample"] = pre_stop_df["Sample"].str[:-2]
+    try:
+        pre_stop_df["Reference"] = pre_stop_df.apply(
+            lambda x: which_ref(x["Sample"], x["Protein"], ref_proteins, irma_summary_df),
+            axis=1,
+        )
+    except ValueError:
+        pre_stop_df = pd.DataFrame(columns=["Sample", "Protein", "Reference", "Reason_a"])
+    ref_covered_df = irma_summary_df[
+        (
+            irma_summary_df["% Reference Covered"]
+            < qc_values[platform]["perc_ref_covered"]
+        )
+    ][["Sample", "Reference"]]
+    ref_covered_df[
+        "Reason_b"
+    ] = f"Less than {qc_values[platform]['perc_ref_covered']}% of reference covered"
+    mean_cov_df = irma_summary_df[
+        (irma_summary_df["Mean Coverage"] < qc_values[platform]["mean_cov"])
+    ][["Sample", "Reference"]]
+    mean_cov_df["Reason_c"] = f"Mean coverage < {qc_values[platform]['mean_cov']}"
+    minor_vars_df = irma_summary_df[
+        (
+            irma_summary_df["Count of Minor SNVs >= 0.05"]
+            > qc_values[platform]["minor_vars"]
+        )
+    ][["Sample", "Reference"]]
+    minor_vars_df[
+        "Reason_d"
+    ] = f"Count of minor variants at or over 5% > {qc_values[platform]['minor_vars']}"
+    combined = ref_covered_df.merge(
+        mean_cov_df, how="outer", on=["Sample", "Reference"]
+    )
+    combined = combined.merge(minor_vars_df, how="outer", on=["Sample", "Reference"])
+    combined = combined.merge(pre_stop_df, how="outer", on=["Sample", "Reference"])
+    combined["Reasons"] = (
+        combined[["Reason_a", "Reason_b", "Reason_c", "Reason_d"]]
+        .fillna("")
+        .agg("; ".join, axis=1)
+    )
+    combined = combined[["Sample", "Reference", "Reasons"]]
+    try:
+        combined["Reasons"] = (
+            combined["Reasons"]
+            .replace("^ \+;|(?<![a-zA_Z0-9]) ;|; \+$", "", regex=True)
+            .str.strip()
+            .replace("^; *| *;$", "", regex=True)
+            .fillna("Pass")
+        )
+    except AttributeError:
+        combined["Reasons"] = combined["Reasons"].fillna("Pass")
+    combined = combined.merge(
+        irma_summary_df["Sample"], how="outer", on="Sample"
+    ).drop_duplicates()
+    combined = (
+        combined.pivot(index="Sample", columns="Reference", values="Reasons")
+        .fillna("Failed IRMA")
+        .drop(numpy.nan, axis=1)
+    )
+    return combined
+
+
 def irma_summary(
     irma_path, samplesheet, reads_df, indels_df, alleles_df, coverage_df, ref_lens
 ):
@@ -301,11 +469,11 @@ def irma_summary(
     )
     reads_df = reads_df[~reads_df["Reads Mapped"].isnull()]
     reads_df["Reference"] = reads_df["Reference"].map(lambda x: x[2:])
-    reads_df[["Total Reads", "Pass QC", "Reads Mapped"]] = (
-        reads_df[["Total Reads", "Pass QC", "Reads Mapped"]]
-        .astype("int")
-        .applymap(lambda x: f"{x:,d}")
-    )
+    # reads_df[["Total Reads", "Pass QC", "Reads Mapped"]] = (
+    #    reads_df[["Total Reads", "Pass QC", "Reads Mapped"]]
+    #    .applymap(lambda x: f"{x:,d}")
+    #    .astype("int")
+    # )
     reads_df = reads_df[
         ["Sample", "Total Reads", "Pass QC", "Reads Mapped", "Reference"]
     ]
@@ -330,15 +498,13 @@ def irma_summary(
         .rename(columns={"Sample": "maplen"})
         .reset_index()
     )
-
     def perc_len(maplen, ref):
         return maplen / ref_lens[ref] * 100
-
     cov_ref_lens["% Reference Covered"] = cov_ref_lens.apply(
         lambda x: perc_len(x["maplen"], x["Reference_Name"]), axis=1
     )
-    cov_ref_lens["% Reference Covered"] = cov_ref_lens["% Reference Covered"].map(
-        lambda x: f"{x:.2f}"
+    cov_ref_lens["% Reference Covered"] = (
+        cov_ref_lens["% Reference Covered"].map(lambda x: f"{x:.2f}").astype(float)
     )
     cov_ref_lens = cov_ref_lens[
         ["Sample", "Reference_Name", "% Reference Covered"]
@@ -352,7 +518,7 @@ def irma_summary(
         )
     )
     coverage_df["Mean Coverage"] = (
-        coverage_df[["Mean Coverage"]].astype("int").applymap(lambda x: f"{x:,d}")
+        coverage_df[["Mean Coverage"]].applymap(lambda x: f"{x:.0f}").astype(float)
     )
     summary_df = (
         reads_df.merge(cov_ref_lens, "left")
@@ -362,7 +528,6 @@ def irma_summary(
         .fillna(0)
     )
     return summary_df
-
 
 
 if __name__ == "__main__":
