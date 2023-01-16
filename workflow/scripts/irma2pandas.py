@@ -5,7 +5,6 @@ import plotly.express as px
 from re import findall
 import plotly.graph_objects as go
 
-
 def seg(s):
     return findall(r"HA|NA|MP|NP|NS|PA|PB1|PB2|SARS-CoV-2", s)
 
@@ -98,6 +97,44 @@ def dash_irma_reads_df(irma_path):
     df["Stage"] = df["Record"].apply(lambda x: int(x.split("-")[0]))
     return df
 
+def read_record2type(record):
+    try:
+        vtype, ref = record.split('_')[0:2]
+        vtype = vtype[2:]
+        if ref in ['HA', 'NA']:
+            subtype = record.split('_')[-1]
+        else:
+            subtype = ''
+        return [vtype, ref, subtype]
+    except Exception as E:
+        print(f'Error in read_record2type function: {E} ')
+        return ['', '', '']
+
+def dash_irma_sample_type(reads_df):
+    type_df = reads_df[reads_df['Record'].str[0] == '4']
+    new_cols = ['vtype', 'ref_type', 'subtype']
+    for n, cols in enumerate(new_cols):
+        type_df[cols] = type_df['Record'].apply(lambda x: read_record2type(x)[n])
+    type_df['Reference'] = type_df['Record'].apply(lambda x: x.split('_')[0][2:])
+    type_df = type_df[["Sample", "vtype", "ref_type", "subtype"]]
+    return type_df
+
+flu_segs = {'A':{'1':'PB2','2':'PB1','3':'PA','4':'HA','5':'NP','6':'NA','7':'M','8':'NS'}, 
+    'B':{'1':'PB1','2':'PB2','3':'PA','4':'HA','5':'NP','6':'NA','7':'M','8':'NS'}}
+
+def dash_irma_sequence_df(irma_path, amended=True):
+    if amended:
+        sequenceFiles = [i for i in glob(irma_path + "/*/amended_consensus/*fa") if 'pad' not in i]
+    else:
+        sequenceFiles = [i for i in glob(irma_path + "/*/*fasta") if 'pad' not in i]
+    df = pd.DataFrame(columns=["Sample", "Sequence"])
+    for f in sequenceFiles:
+        content = open(f).read()
+        for s in findall(r">.+", content):
+            sample_id, sequence = s[1:], findall(rf"(?s)(?<={s}).+(?=>)*", content)[0].replace('\n','')
+            df = df.append(pd.DataFrame([[sample_id, sequence]], columns=df.columns))
+    return df
+
 
 def dash_irma_coverage_df(irma_path):
     coverageFiles = glob(irma_path + "/*/tables/*a2m.txt")
@@ -108,6 +145,7 @@ def dash_irma_coverage_df(irma_path):
     if len(coverageFiles) == 0:
         return "No coverage files found under {}/*/tables/".format(irma_path)
     df = irmatable2df(coverageFiles)
+
     return df
 
 

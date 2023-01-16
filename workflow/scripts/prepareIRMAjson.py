@@ -43,6 +43,7 @@ ref_proteins = {
     "N": "SARS-CoV-2",
     "ORF3a": "SARS-CoV-2",
     "E": "SARS-CoV-2",
+    "SARS-CoV-2": "SARS-CoV-2",
     "PB1-F2": "A_PB1 B_PB1",
     "HA": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
         A_HA_H2 A_HA_H3 A_HA_H4 A_HA_H5 A_HA_H6 A_HA_H7 A_HA_H8 A_HA_H9 B_HA",
@@ -59,7 +60,9 @@ ref_proteins = {
         A_HA_H2 A_HA_H3 A_HA_H4 A_HA_H5 A_HA_H6 A_HA_H7 A_HA_H8 A_HA_H9 B_HA",
     "PA-X": "A_PA B_PA",
     "NS1": "A_NS B_NS",
+    "NS": "A_NS B_NS",
     "M2": "A_MP B_MP",
+    "M": "A_MP B_MP",
     "NA": "A_NA_N1 A_NA_N2 A_NA_N3 A_NA_N4 A_NA_N5 A_NA_N6 A_NA_N7 A_NA_N8 A_NA_N9 B_NA",
     "PA": "A_PA B_PA",
 }
@@ -234,8 +237,8 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         type="line",
         x0=0,
         x1=df2[pos_header].max(),
-        y0=100,
-        y1=100,
+        y0=qc_values[platform]['mean_cov'],
+        y1=qc_values[platform]['mean_cov'],
         line=dict(color="Black", dash="dash", width=5),
     )
     ymax = df2[cov_header].max()
@@ -287,10 +290,16 @@ def generate_dfs(irma_path):
         print(f"  -> coverage_df saved to {out.name}")
     print("Building read_df")
     read_df = irma2pandas.dash_irma_reads_df(irma_path)
-    createReadPieFigure(irma_path, read_df)
     with open(f"{irma_path}/reads.json", "w") as out:
         read_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> read_df saved to {out.name}")
+    createReadPieFigure(irma_path, read_df)
+    print("Build vtype_df")
+    vtype_df = irma2pandas.dash_irma_sample_type(read_df)
+    # Get most common vtype/sample
+    with open(f"{irma_path}/vtype.json", "w") as out:
+        vtype_df.to_json(out, orient="split", double_precision=3)
+        print(f"  -> vtype_df saved to {out.name}")
     print("Building alleles_df")
     alleles_df = irma2pandas.dash_irma_alleles_df(irma_path)
     with open(f"{irma_path}/alleles.json", "w") as out:
@@ -327,12 +336,23 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/irma_summary.json", "w") as out:
         irma_summary_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> irma_summary_df saved to {out.name}")
+    print("Building nt_sequence_df")
+    nt_seqs_df = irma2pandas.dash_irma_sequence_df(irma_path)
+    if virus == "flu":
+        tmp = vtype_df.groupby(['Sample','vtype']).count().reset_index().groupby(['Sample'])['vtype'].max().reset_index()
+        vtype_dic = dict(zip(tmp.Sample, tmp.vtype))
+        nt_seqs_df['Target_ref'] = nt_seqs_df["Sample"].apply(lambda x: irma2pandas.flu_segs[vtype_dic[x[:-2]]][x[-1]])
+        nt_seqs_df["Sample"] = nt_seqs_df["Sample"].str[:-2]
+    nt_seqs_df['Reference'] = nt_seqs_df.apply(lambda x: which_ref(x["Sample"], x["Target_ref"], ref_proteins, irma_summary_df), axis=1)
+    with open(f"{irma_path}/nt_sequences.json", "w") as out:
+        nt_seqs_df.to_json(out, orient="split")
+        print(f"  -> nt_sequence_df saved to {out.name}")
     print("Building pass_fail_df")
-    pass_fail_df = pass_fail_qc_df(irma_summary_df, dais_vars_df)
+    pass_fail_df = pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df)
     with open(f"{irma_path}/pass_fail_qc.json", "w") as out:
         pass_fail_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> pass_fail_qc_df saved to {out.name}")
-    return read_df, coverage_df, segments, segcolor, pass_fail_df
+    return read_df, coverage_df, segments, segcolor, pass_fail_df, nt_seqs_df
 
 
 def negative_qc_statement(irma_reads_df, negative_list=""):
@@ -373,8 +393,22 @@ def which_ref(sample, protein, ref_protein_dic, irma_summary_df):
     except ValueError:
         return numpy.nan
 
+def pass_qc(reason, sequence):
+    reason, sequence = str(reason), str(sequence)
+    if reason == 'nan' and sequence != 'nan':
+        return 'Pass'
+    elif reason == 'nan' and sequence == 'nan':
+        return 'No matching reads'
+    else:
+        return reason
 
-def pass_fail_qc_df(irma_summary_df, dais_vars_df):
+def anyref(ref):
+    if ref == '':
+        return 'Any'
+    else:
+        return ref
+
+def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     if not qc_values[platform]["allow_stop_codons"]:
         pre_stop_df = dais_vars_df[dais_vars_df["AA Variants"].str.contains("[0-9]\*")][
             ["Sample", "Protein"]
@@ -420,26 +454,28 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df):
     combined = combined.merge(pre_stop_df, how="outer", on=["Sample", "Reference"])
     combined["Reasons"] = (
         combined[["Reason_a", "Reason_b", "Reason_c", "Reason_d"]]
-        .fillna("")
+        .fillna('')
         .agg("; ".join, axis=1)
     )
+    # Add in found sequences
+    combined = combined.merge(nt_seqs_df, how="outer", on=["Sample", "Reference"])
+    combined["Reasons"] = combined.apply(lambda x: pass_qc(x['Reasons'], x['Sequence']), axis=1)
     combined = combined[["Sample", "Reference", "Reasons"]]
     try:
         combined["Reasons"] = (
             combined["Reasons"]
             .replace("^ \+;|(?<![a-zA_Z0-9]) ;|; \+$", "", regex=True)
             .str.strip()
-            .replace("^; *| *;$", "", regex=True)
-            .fillna("Pass")
+            .replace("^; *| *;$", "", regex=True) #.fillna("Too few reads matching reference") ####### NOT 100% TRUE. DO NOT PASS IRMA-FAILED SAMPLES!!!!!! FIX!
         )
     except AttributeError:
-        combined["Reasons"] = combined["Reasons"].fillna("Pass")
-    combined = combined.merge(
-        irma_summary_df["Sample"], how="outer", on="Sample"
-    ).drop_duplicates()
+        combined["Reasons"] = combined["Reasons"].fillna("Too few reads matching reference")
+    #combined = combined.merge(
+    #    irma_summary_df["Sample"], how="outer", on="Sample"
+    #).drop_duplicates()
+    combined['Reference'] = combined['Reference'].apply(lambda x: anyref(x))
     combined = (
-        combined.pivot(index="Sample", columns="Reference", values="Reasons")
-        .fillna("Failed IRMA")
+        combined.drop_duplicates().pivot(index="Sample", columns="Reference", values="Reasons")
         .drop(numpy.nan, axis=1)
     )
     return combined
@@ -449,6 +485,7 @@ def irma_summary(
     irma_path, samplesheet, reads_df, indels_df, alleles_df, coverage_df, ref_lens
 ):
     ss_df = pd.read_csv(samplesheet)
+    allsamples_df = ss_df[['Sample ID']].rename(columns={'Sample ID':'Sample'})
     neg_controls = list(ss_df[ss_df["Sample Type"] == "- Control"]["Sample ID"])
     qc_statement = negative_qc_statement(reads_df, neg_controls)
     with open(f"{irma_path}/qc_statement.json", "w") as out:
@@ -525,8 +562,10 @@ def irma_summary(
         .merge(coverage_df, "left")
         .merge(alleles_df, "left")
         .merge(indels_df, "left")
-        .fillna(0)
+        .merge(allsamples_df, "outer", on="Sample")
     )
+    summary_df['Reference'] = summary_df['Reference'].fillna('')
+    summary_df = summary_df.fillna(0)
     return summary_df
 
 
