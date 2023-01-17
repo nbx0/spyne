@@ -207,7 +207,7 @@ rule prepareIRMAjson:
     log:
         "logs/prepareIRMAjson.log"
     shell:
-        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv"
+        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont sc2"
 
 
 rule finishup:

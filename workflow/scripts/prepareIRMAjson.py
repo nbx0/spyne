@@ -117,8 +117,12 @@ def createheatmap(irma_path, coverage_means_df):
 def create_passfail_heatmap(irma_path, pass_fail_df):
     print("Building pass_fail_heatmap")
     pass_fail_df = pass_fail_df.reset_index().melt(id_vars=["Sample"], value_name="Reasons")
+    pass_fail_df['Reference'] = pass_fail_df['Reference'].apply(lambda x: x.split('_')[1])
+    pass_fail_df = pass_fail_df.dropna()
     def assign_number(reason):
-        if reason == 'Pass':
+        if str(reason) == 'nan':
+            return numpy.nan
+        elif reason == 'Pass':
             return numpy.nan
         else:
             return len(reason.split(';'))
@@ -170,12 +174,10 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         pos_header = "HMM_Position"
     else:
         pos_header = "Position"
-
     def zerolift(x):
         if x == 0:
             return 0.000000000001
         return x
-
     if not cov_linear_y:
         df[cov_header] = df[cov_header].apply(lambda x: zerolift(x))
     df2 = df[df["Sample"] == sample]
@@ -333,9 +335,6 @@ def generate_dfs(irma_path):
     irma_summary_df = irma_summary(
         irma_path, samplesheet, read_df, indels_df, alleles_df, coverage_df, ref_lens
     )
-    with open(f"{irma_path}/irma_summary.json", "w") as out:
-        irma_summary_df.to_json(out, orient="split", double_precision=3)
-        print(f"  -> irma_summary_df saved to {out.name}")
     print("Building nt_sequence_df")
     nt_seqs_df = irma2pandas.dash_irma_sequence_df(irma_path)
     if virus == "flu":
@@ -352,6 +351,18 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/pass_fail_qc.json", "w") as out:
         pass_fail_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> pass_fail_qc_df saved to {out.name}")
+    irma_summary_df = irma_summary_df.merge(combined.reset_index().melt(id_vars=["Sample"], value_name="Reasons"), how='left', on=['Sample','Reference'])
+    def noref(ref):
+        if str(ref) == '':
+            return 'N/A'
+        else:
+            return ref
+    irma_summary_df['Reference'] = irma_summary_df['Reference'].apply(lambda x: noref(x))
+    irma_summary_df['Reasons'] = irma_summary_df['Reasons'].fillna('Fail')
+    irma_summary_df = irma_summary_df.rename(columns={'Reasons': 'Pass/Fail Reason'})
+    with open(f"{irma_path}/irma_summary.json", "w") as out:
+        irma_summary_df.to_json(out, orient="split", double_precision=3)
+        print(f"  -> irma_summary_df saved to {out.name}")
     return read_df, coverage_df, segments, segcolor, pass_fail_df, nt_seqs_df
 
 
@@ -407,6 +418,12 @@ def anyref(ref):
         return 'Any'
     else:
         return ref
+
+def failedall(combined_df):
+    for i in combined.index:
+        if str(combined.loc[i]['']) != 'nan':
+            combined_df.loc[i] = 'No assembly'
+    return combined_df
 
 def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     if not qc_values[platform]["allow_stop_codons"]:
@@ -466,18 +483,23 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
             combined["Reasons"]
             .replace("^ \+;|(?<![a-zA_Z0-9]) ;|; \+$", "", regex=True)
             .str.strip()
-            .replace("^; *| *;$", "", regex=True) #.fillna("Too few reads matching reference") ####### NOT 100% TRUE. DO NOT PASS IRMA-FAILED SAMPLES!!!!!! FIX!
+            .replace("^; *| *;$", "", regex=True)
         )
     except AttributeError:
         combined["Reasons"] = combined["Reasons"].fillna("Too few reads matching reference")
     #combined = combined.merge(
     #    irma_summary_df["Sample"], how="outer", on="Sample"
     #).drop_duplicates()
-    combined['Reference'] = combined['Reference'].apply(lambda x: anyref(x))
+    #combined['Reference'] = combined['Reference'].apply(lambda x: anyref(x))
     combined = (
         combined.drop_duplicates().pivot(index="Sample", columns="Reference", values="Reasons")
-        .drop(numpy.nan, axis=1)
+        #.drop(numpy.nan, axis=1)
     )
+    combined = combined.apply(lambda x: failedall(x))
+    try:
+        combined = combined.drop(columns='')
+    except KeyError:
+        pass
     return combined
 
 
