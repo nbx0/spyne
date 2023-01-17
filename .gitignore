@@ -3,3 +3,8 @@
 .snakemake
 .vscode/
 .Rhistory
+*pyc
+workflow/scripts/__pycache__
+workflow/scripts/__pycache__/dais2pandas.cpython-37.pyc
+workflow/scripts/__pycache__/irma2pandas.cpython-37.pyc
+*.pyc
