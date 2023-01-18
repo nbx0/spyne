@@ -192,7 +192,7 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output}"
 
 rule prepareIRMAjson:
     input:
