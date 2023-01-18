@@ -368,12 +368,12 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/pass_fail_qc.json", "w") as out:
         pass_fail_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> pass_fail_qc_df saved to {out.name}")
-    pass_fail_seqs_df = pass_fail_df.merge(nt_seqs_df, how='left', on=['Sample','Reference'])
+    pass_fail_seqs_df = pass_fail_df.reset_index().melt(id_vars='Sample').merge(nt_seqs_df, how='left', on=['Sample','Reference']).rename(columns={'value':'Reasons'})
     # Print nt sequence fastas
     pass_fail_seqs_df.loc[pass_fail_seqs_df['Reasons'] == 'Pass'].apply(lambda x: seq_df2fastas(irma_path, x['Sample'], x['Reference'], x['Sequence'], 'nt', output_name='amended_consensus.fasta'), axis=1)
     aa_seqs_df = dais2pandas.seq_df(f"{irma_path}/dais_results")
     aa_seqs_df['Reference'] = aa_seqs_df.apply(lambda x: which_ref(x["Sample"], x["Protein"], ref_proteins, irma_summary_df), axis=1)
-    pass_fail_aa_df = pass_fail_df.merge(aa_seqs_df, how='left', on=['Sample','Reference'])
+    pass_fail_aa_df = pass_fail_df.reset_index().melt(id_vars='Sample').merge(aa_seqs_df, how='left', on=['Sample','Reference']).rename(columns={'value':'Reasons'})
     # Print aa sequence fastas
     pass_fail_aa_df.loc[pass_fail_aa_df['Reasons'] == 'Pass'].apply(lambda x: seq_df2fastas(irma_path, x['Sample'], x['Reference'], x['AA Sequence'], 'nt', output_name='amino_acid_consensus.fasta'), axis=1)
     with open(f"{irma_path}/nt_sequences.json", "w") as out:
