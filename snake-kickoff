@@ -1,0 +1,43 @@
+
+#!/bin/bash 
+# Wrapper to perform genome assembly 
+
+# Run whatever Bash commands here
+RESOURCE_ROOT=/SC2-spike-seq
+BBTOOLS_ROOT=/opt/bbtools
+JAVA_ROOT=/opt/java
+
+# Export bbtools to system path
+bbtools_path=`ls ${BBTOOLS_ROOT}`
+
+for eachdir in ${bbtools_path}
+do
+	export PATH=$PATH:${BBTOOLS_ROOT}/${eachdir}
+done
+
+# Export java to system path
+java_path=`ls ${JAVA_ROOT}`
+
+for eachdir in ${java_path}
+do
+	export PATH=$PATH:${JAVA_ROOT}/${eachdir}/bin
+done
+
+# Check the java version
+java --version
+
+# Check the docker version
+docker --version
+
+# Kill any running snakemake processes
+#kill -9 $(ps -A | grep snakemake | awk '{print $1}')
+
+# Remove .snakemake directory to assure locks are gone
+#run_path=$(dirname $(readlink -f $1))
+#rm -fr $run_path/.snakemake $run_path/*.fin
+
+# Create config.yaml from samplesheet
+python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
+while (ls ${2}/*fin >/dev/null 2>&1); do
+	python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
+done

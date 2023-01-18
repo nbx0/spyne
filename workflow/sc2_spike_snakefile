@@ -10,7 +10,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin'
+        expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin', 'IRMA/prepareIRMAjson.fin'
     shell:
         'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT spike'
 
@@ -18,12 +18,12 @@ rule gather_fastqs:
     input:
         "config.yaml"
     output:
-        "IRMA/cat_{barcode}.fastq.gz"
+        fq = "IRMA/cat_{barcode}.fastq.gz"
     message: "Step 1 - merging all read files into a single file"
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat fastq_pass/{params.barcode_number}/*fastq* > {output}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq}"
 
 
 rule barcode_trim_left:
@@ -114,12 +114,12 @@ rule subsample:
         err = "logs/{barcode}.reformat.stderr.log"
     group:
         "trim-map"
-    message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
+    message: "Step 4b - subsampling cleaned up read if excess > 5K exist"
     shell:
         "reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=1000000"
+        " samplereadstarget=5000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
@@ -141,7 +141,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome"
     shell:
-        'docker run --rm -v $PWD:/data public.ecr.aws/n3z8t4o2/irma:1.0.2p3 IRMA CoV-s-gene {input} IRMA/{wildcards.barcode} |tee -a {log.out} 2> {log.err}'
+        "docker exec irma-1.0.2p3 IRMA CoV-s-gene /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
 
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
@@ -196,13 +196,33 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {input} -m BETACORONAVIRUS && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m BETACORONAVIRUS && touch {output}"
 
+rule prepareIRMAjson:
+    input:
+        rules.dais_ribosome.output
+    output:
+        temp('IRMA/prepareIRMAjson.fin')
+    message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
+    log:
+        "logs/prepareIRMAjson.log"
+    shell:
+        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont sc2 && touch {output}"
 
+rule cleanup:
+    input:
+        rules.prepareIRMAjson.output
+    output:
+        temp('IRMA/cleanup.fin')
+    message: "Step 9 - Removing excess intermediate files"
+    log:
+        "logs/cleanup.log"
+    shell:
+        "rm IRMA/*_bartrim_*.fastq && rm IRMA/cat*.fastq.gz && rm IRMA/*.decision && touch {output}"
 
 rule finishup:
     input:
-        passed_irma
+        rules.cleanup.output
     output:
         temp("SC2.{barcode}.fin")
     shell:

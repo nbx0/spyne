@@ -1,38 +1,190 @@
-# On-Premises ONT Assembly for Spike Only Sequencing
 
-Snakemake workflow specifically for ONT data processing with any infrastructure
+---
+output:
+  html_document:
+      keep_md: yes
+---
 
-
-## General Steps of the Pipeline
-1. remove barcodes from FastQ reads that were not removed due to having a few SNPs with `bbduk.sh`
-2. trim primers from ends with `cutadapt`
-3. perform genome assembly with `irma` to generate a FastA consensus sequence
-
+<!-- README.md is generated from README.Rmd. Please edit that file -->
 
 
-## To run Pipeline
-1. Export IRMA, bbtools (bbduk.sh, reformat.sh) to path
-2. Activate conda environment
-ex: 
-` source /scicomp/groups/Projects/SARS2Seq/bin/miniconda/bin/activate /scicomp/home-pure/sars2seq/miniconda/envs/snakemake`
-3. Create samplesheet.csv
-4. Create config.yaml from samplesheet
 
-` python scripts/config_create.py <path to samplesheet.csv> <path to instrument run> <Nanopore run name> `
+### Requirements
 
-5. Run Snakemake
+- Docker version >= 18
+- Git version >= 2.21.0
+
+### Steps to run SC2-spike-seq container
+
+#### (1) Clone this respitory
+
+```
+git clone https://github.com/nbx0/SC2-spike-seq/tree/container_init
+``` 
+
+#### (2) CD to `SC2-spike-seq` folder 
+
+#### (3) Check out `container_init` branch
+
+```
+git checkout container_init 
+```
+
+#### (4) Pull down irma and dais-ribosome images
+
+- From a docker registry
+
+&emsp; **IRMA**: `docker pull public.ecr.aws/n3z8t4o2/irma:1.0.2p3` <br>
+&emsp; **Dias-Ribosome**: `docker pull public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1`
+
+#### (5) Run **irma** and **dais-ribosome** containers
+
+&emsp; **IRMA**: `docker run -v /path/to/data:/data --name irma:1.0.2p3 -t -d public.ecr.aws/n3z8t4o2/irma:1.0.2p3` <br>
+&emsp; **Dais-Ribosome**: `docker run -v /path/to/data:/data --name dais-ribosome:1.2.1 -t -d public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1`
+
+**NOTE:** <br>
+- Change __/path/to/data__ to your local directory where it contains all data files needed to feed into the `IRMA` and `Dais-ribosome` workflow. This directory is mounted to `/data` directory inside the container. <br>
+
+#### (6) Build **SC2-spike-seq** image and run its container
+
+__NOTE:__ In the `SC2-seq-spike` directory, there is a `Dockerfile` that contains a list of instructions and steps of how to build and run the `SC2-spike-seq` workflow.
+
+**A. Build the development version**
+
+- Using a build-arg
+
+```
+docker build -t SC2-spike-seq-dev:v1.0.0 --build-arg BUILD_STAGE=dev .
+```
+
+- Using a specific dockerfile for development stage (e.g. `Dockerfile.dev`)
+
+```
+docker build -t SC2-spike-seq-dev:v1.0.0 -f Dockerfile.dev .
+```
+
+**-t**: add a tag to an image such as the version of the application, e.g. *SC2-spike-seq-dev:v1.0.0* or *SC2-spike-seq-dev:latest* <br>
+**`--`file, -f**: name of the Dockerfile <br>
+**`--`build-arg**: set the build time variable for docker image. In this case, we want to build the **development** stage by setting build variable `BUILD_STAGE=dev`. <br>
+
+_The image took approximately < 10 mins to build_
+
+After the build is completed, you can check if the image is built successfully
+
+```
+docker images
+
+REPOSITORY             TAG        IMAGE ID        CREATED        SIZE
+SC2-spike-seq-dev      v1.0.0     2c22887402d3    2 hours ago    1.58GB
+```
+
+To run the `SC2-spike-seq-dev` container
+
+```    
+docker run -v /path/to/data:/data -v /path/to/SC2-spike-seq:/SC2-spike-seq -v /var/run/docker.sock:/var/run/docker.sock --name SC2-spike-seq-dev-1.0.0 -t -d SC2-spike-seq-dev:v1.0.0 
+```
+
+**NOTE:** <br>
+- Change __/path/to/data__ to your local directory where it contains all data files needed to feed into the `SC2-spike-seq` workflow. This directory is mounted to `/data` directory inside the container. <br>
+- Change __/path/to/SC2-spike-seq__ to your local `SC2-spike-seq` directory. This directory must contain all of the code base needed to build the `SC2-spike-seq` workflow. <br>
+- **/var/run/docker.sock:/var/run/docker.sock** is used to connect the host's docker.socket to container's docker.socket where you can run a container inside of another container. <br>
+
+**-t**: allocate a pseudo-tty <br>
+**-d**: run the container in detached mode <br>
+**-v**: mount code base and data files from host directory to container directory **[host_div]:[container_dir]**. By exposing the host directory to docker container, docker will be able to access data files within that mounted directory and use it to fire up the `SC2-spike-seq` workflow.  <br>
+**`--`name**: give an identity to the container <br>
+
+For more information about the Docker syntax, see [Docker run reference](https://docs.docker.com/engine/reference/run/)
+
+To check if the container is built successfully
+
+```
+docker container ps
 
 
-#### Dependencies
-The workflow scripts require:
-- Python
-- Snakemake
-System calls make use of:
-- bbtools
-- cutadapt
-- IRMA
+CONTAINER ID   IMAGE                        COMMAND        CREATED         STATUS        PORTS      NAMES
+b37b6b19c4e8   SC2-spike-seq-dev:v1.0.0     "bash"         5 hours ago     Up 5 hours               SC2-spike-seq-dev-1.0.0
+```
+
+**B. Build the production version**
+
+- By default
+
+```
+docker build -t SC2-spike-seq-prod:v1.0.0 .
+```
+
+- Using a specific dockerfile for production stage (e.g. `Dockerfile.prod`)
+
+```
+docker build -t SC2-spike-seq-prod:v1.0.0 -f Dockerfile.prod .
+```
+
+**-t**: add a tag to an image such as the version of the application, e.g. *SC2-spike-seq-prod:v1.0.0* or *SC2-spike-seq-prod:latest* <br>
+**`--`file, -f**: name of the Dockerfile
+
+_The image took approximately < 10 mins to build_
+
+After the build is completed, you can check if the image is built successfully
+
+```
+docker images
+
+REPOSITORY             TAG        IMAGE ID        CREATED        SIZE
+SC2-spike-seq-prod     v1.0.0     c436f88dcd2f    2 hours ago    1.58GB
+```
+
+To run the `SC2-spike-seq-prod` container
+
+```    
+docker run -v /path/to/data:/data -v /var/run/docker.sock:/var/run/docker.sock --name SC2-spike-seq-prod-1.0.0 -t -d SC2-spike-seq-prod:v1.0.0 
+```
+
+**NOTE:** <br>
+- Change __/path/to/data__ to your local directory where it contains all data files needed to feed into the `SC2-spike-seq` workflow. This directory is mounted to `/data` directory inside the container. <br>
+- **/var/run/docker.sock:/var/run/docker.sock** is used to connect the host's docker.socket to container's docker.socket where you can run a container inside of another container. <br>
+
+**-t**: allocate a pseudo-tty <br>
+**-d**: run the container in detached mode <br>
+**-v**: mount code base and data files from host directory to container directory **[host_div]:[container_dir]**. By exposing the host directory to docker container, docker will be able to access data files within that mounted directory and use it to fire up the `SC2-spike-seq` workflow.  <br>
+**`--`name**: give an identity to the container <br>
+
+For more information about the Docker syntax, see [Docker run reference]()
+
+To check if the container is built successfully
+
+```
+docker container ps
 
 
-#### Resources
-- snakemake has an official tutorial section [here](https://snakemake.readthedocs.io/en/stable/tutorial/tutorial.html#tutorial)
-- [10 recommendations for software by Torsten](https://gigascience.biomedcentral.com/articles/10.1186/2047-217X-2-15)
+CONTAINER ID   IMAGE                        COMMAND     CREATED        STATUS        PORTS      NAMES
+475741fd9bc7   SC2-spike-seq-prod:v1.0.0    "bash"      5 hours ago    Up 5 hours               SC2-spike-seq-prod-1.0.0
+```
+
+#### (7) To execute snakemake pipeline inside **SC2-spike-seq-prod-1.0.0** container
+
+```
+docker exec -w /data SC2-spike-seq-prod-1.0.0 bash snake-kickoff <path/to/samplesheet.csv> <runpath> <experiment_type>
+```
+
+#### (8) To execute irma pipeline inside **irma-1.0.2p3** container
+
+- FOR PAIRED-END
+
+```
+docker exec -w /data irma-1.0.2p3 IRMA <MODULE|MODULE-CONFIG> <R1.fastq.gz|R1.fastq> <R2.fastq.gz|R2.fastq> [path/to/]<sample_name>
+```
+
+- For SINGLE-END
+
+```
+docker exec -w /data irma-1.0.2p3 IRMA <MODULE|MODULE-CONFIG> <fastq|fastq.gz> [path/to/]<sample_name>
+```
+
+<br>
+
+Any questions or issues? Please report them on our [github issues](https://github.com/nbx0/SC2-spike-seq/issues)
+
+<br>
+
+

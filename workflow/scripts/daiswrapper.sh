@@ -6,18 +6,18 @@ do
 	m ) MODULE=$OPTARG;;
 	esac
 done
-echo $input
-sed -i 's/-/_/g' $input
-readlink -f $input
+
+sed -i 's/-/_/g' $input || sed -i 's/-/_/g' $(basename $input)
+
 dais_out=$(echo $input|cut -d '.' -f 1)
 dais_out=${dais_out%"_input"} 
+
 [[ ! -d IRMA/dais_results ]] && mkdir IRMA/dais_results
-cmd="docker run --rm \
-    -v $PWD:/data \
-    public.ecr.aws/n3z8t4o2/dais-ribosome:1.2.1 ribosome \
+cmd="docker exec  \
+    dais-ribosome-1.2.1 ribosome \
     --module $MODULE $input ${dais_out}.seq ${dais_out}.ins ${dais_out}.del"
 
 echo $cmd
-eval $cmd
-
-mv ${dais_out}* IRMA/dais_results
+eval $cmd && \
+sleep 10 && \
+mv ${dais_out}* IRMA/dais_results || mv DAIS* IRMA/dais_results

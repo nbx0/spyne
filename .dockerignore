@@ -1,0 +1,11 @@
+**/.git
+**/.gitignore
+*.Rmd
+*.html
+*.md
+*.Rhistory
+*docs
+docker.compose.yml
+containers
+envs
+tests

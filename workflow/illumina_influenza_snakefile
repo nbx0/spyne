@@ -30,7 +30,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome with IRMA"
     shell:
-        "docker run --rm -v $PWD:/data public.ecr.aws/n3z8t4o2/irma:1.0.2p3 IRMA FLU fastqs/*/{wildcards.sample}*R1*.fastq* fastqs/*/{wildcards.sample}*R2*.fastq*  IRMA/{wildcards.sample} 2> {log.err} |tee -a {log.out}"
+        "docker exec irma-1.0.2p3 IRMA FLU /data/{config[runid]}/fastqs/*/{wildcards.sample}*R1*.fastq* /data/{config[runid]}/fastqs/*/{wildcards.sample}*R2*.fastq*  /data/{config[runid]}/IRMA/{wildcards.sample} 2> {log.err} |tee -a {log.out}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
@@ -83,7 +83,7 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
 
 
 
