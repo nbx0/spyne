@@ -192,22 +192,33 @@ rule dais_ribosome:
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output}"
 
 rule prepareIRMAjson:
     input:
         rules.dais_ribosome.output
     output:
-        temp(touch('IRMA/prepareIRMAjson.fin'))
+        temp('IRMA/prepareIRMAjson.fin')
     message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
     log:
         "logs/prepareIRMAjson.log"
     shell:
-        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu"
+        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu && touch {output}"
+
+rule cleanup:
+    input:
+        rules.prepareIRMAjson.output
+    output:
+        temp('IRMA/cleanup.fin')
+    message: "Step 9 - Removing excess intermediate files"
+    log:
+        "logs/cleanup.log"
+    shell:
+        "rm IRMA/*_bartrim_*.fastq && rm IRMA/cat*.fastq.gz && rm IRMA/*.decision && touch {output}"
 
 rule finishup:
     input:
-        passed_irma
+        rules.cleanup.output
     output:
         temp("FLU_{barcode}.fin")
     shell:

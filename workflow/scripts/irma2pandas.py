@@ -106,9 +106,8 @@ def read_record2type(record):
         else:
             subtype = ''
         return [vtype, ref, subtype]
-    except Exception as E:
-        print(f'Error in read_record2type function: {E} ')
-        return ['', '', '']
+    except ValueError as E:
+        return [record[2:]]*3
 
 def dash_irma_sample_type(reads_df):
     type_df = reads_df[reads_df['Record'].str[0] == '4']

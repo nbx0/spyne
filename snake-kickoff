@@ -38,3 +38,6 @@ docker --version
 
 # Create config.yaml from samplesheet
 python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
+while (ls ${2}/*fin >/dev/null 2>&1); do
+	python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
+done
