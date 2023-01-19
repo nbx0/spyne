@@ -3,7 +3,7 @@
 # Wrapper to install downloaded packages 
 
 PACKAGE_ROOT=/opt/bbtools
-RESOURCE_ROOT=/SC2-spike-seq
+RESOURCE_ROOT=/spyne
 bbtools_orig=${RESOURCE_ROOT}/bbtools/bbtools_file.txt
 bbtools_clean=${RESOURCE_ROOT}/bbtools/bbtools_file_clean.txt
 

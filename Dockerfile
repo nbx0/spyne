@@ -49,7 +49,7 @@ ENV WORKDIR=/data
 ENV STAGE=prod
 
 # Copy all scripts to docker images
-COPY . /SC2-spike-seq
+COPY . /spyne
 
 ############# Build Stage: Final ##################
 
@@ -68,78 +68,78 @@ RUN chmod -R a+rwx ${WORKDIR}
 ############# Install java ##################
 
 # Copy all files to docker images
-COPY java /SC2-spike-seq/java
+COPY java /spyne/java
 
 # Copy all files to docker images
-COPY install_java.sh /SC2-spike-seq/install_java.sh
+COPY install_java.sh /spyne/install_java.sh
 
 # Convert bash script from Windows style line endings to Unix-like control characters
-RUN dos2unix /SC2-spike-seq/install_java.sh
+RUN dos2unix /spyne/install_java.sh
 
 # Allow permission to excute the bash script
-RUN chmod a+x /SC2-spike-seq/install_java.sh
+RUN chmod a+x /spyne/install_java.sh
 
 # Execute bash script to wget the file and tar the package
-RUN bash /SC2-spike-seq/install_java.sh
+RUN bash /spyne/install_java.sh
 
 ############# Install bbtools ##################
 
 # Copy all files to docker images
-COPY bbtools /SC2-spike-seq/bbtools
+COPY bbtools /spyne/bbtools
 
 # Copy all files to docker images
-COPY install_bbtools.sh /SC2-spike-seq/install_bbtools.sh
+COPY install_bbtools.sh /spyne/install_bbtools.sh
 
 # Convert bash script from Windows style line endings to Unix-like control characters
-RUN dos2unix /SC2-spike-seq/install_bbtools.sh
+RUN dos2unix /spyne/install_bbtools.sh
 
 # Allow permission to excute the bash script
-RUN chmod a+x /SC2-spike-seq/install_bbtools.sh
+RUN chmod a+x /spyne/install_bbtools.sh
 
 # Execute bash script to wget the file and tar the package
-RUN bash /SC2-spike-seq/install_bbtools.sh
+RUN bash /spyne/install_bbtools.sh
 
 ############# Install Docker ##################
 
 # Copy all files to docker images
-COPY docker /SC2-spike-seq/docker
+COPY docker /spyne/docker
 
 # Copy all files to docker images
-COPY install_docker.sh /SC2-spike-seq/install_docker.sh
+COPY install_docker.sh /spyne/install_docker.sh
 
 # Convert bash script from Windows style line endings to Unix-like control characters
-RUN dos2unix /SC2-spike-seq/install_docker.sh
+RUN dos2unix /spyne/install_docker.sh
 
 # Allow permission to excute the bash script
-RUN chmod a+x /SC2-spike-seq/install_docker.sh
+RUN chmod a+x /spyne/install_docker.sh
 
 # Execute bash script to wget the file and tar the package
-RUN bash /SC2-spike-seq/install_docker.sh
+RUN bash /spyne/install_docker.sh
 
 ############# Install python packages ##################
 
 # Copy all files to docker images
-COPY requirements.txt /SC2-spike-seq/requirements.txt
+COPY requirements.txt /spyne/requirements.txt
 
 # Install python requirements
-RUN pip3 install --no-cache-dir -r /SC2-spike-seq/requirements.txt
+RUN pip3 install --no-cache-dir -r /spyne/requirements.txt
 
-############# Run SC2-spike-seq ##################
+############# Run spyne ##################
 
 # Copy all files to docker images
-COPY snake-kickoff /SC2-spike-seq/snake-kickoff
+COPY snake-kickoff /spyne/snake-kickoff
 
-# Convert SC2-spike-seq from Windows style line endings to Unix-like control characters
-RUN dos2unix /SC2-spike-seq/snake-kickoff
+# Convert spyne from Windows style line endings to Unix-like control characters
+RUN dos2unix /spyne/snake-kickoff
 
 # Allow permission to excute the bash scripts
-RUN chmod a+x /SC2-spike-seq/snake-kickoff
+RUN chmod a+x /spyne/snake-kickoff
 
-# Allow permission to read and write files to SC2-spike-seq directory
-RUN chmod -R a+rwx /SC2-spike-seq
+# Allow permission to read and write files to spyne directory
+RUN chmod -R a+rwx /spyne
 
 # Clean up
 RUN apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Export bash script to path
-ENV PATH "$PATH:/SC2-spike-seq"
+ENV PATH "$PATH:/spyne"
