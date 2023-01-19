@@ -12,7 +12,8 @@ rule all:
     input:
         expand("SC2.{barcode}.fin", barcode=config["barcodes"].keys()), 'DAIS_ribosome_output.fin', 'IRMA/prepareIRMAjson.fin'
     shell:
-        'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT spike'
+        'touch IRMA/all.fin'
+        #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT spike'
 
 rule gather_fastqs:
     input:
