@@ -313,7 +313,6 @@ def generate_dfs(irma_path):
     with open(f"{irma_path}/reads.json", "w") as out:
         read_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> read_df saved to {out.name}")
-    createReadPieFigure(irma_path, read_df)
     print("Build vtype_df")
     vtype_df = irma2pandas.dash_irma_sample_type(read_df)
     # Get most common vtype/sample
@@ -430,8 +429,7 @@ def createheatmap(irma_path, coverage_means_df):
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
-    coverage_means_df[cov_header] = coverage_means_df[cov_header].fillna(0)
-    coverage_means_df = coverage_means_df
+    coverage_means_df = coverage_means_df.pivot(index='Sample',columns='Segment').fillna(0).reset_index().melt(id_vars='Sample', value_name=cov_header).drop([None], axis=1)
     cov_max = coverage_means_df[cov_header].max()
     if cov_max <= 200:
         cov_max = 200
@@ -441,11 +439,11 @@ def createheatmap(irma_path, coverage_means_df):
         data=go.Heatmap(  # px.imshow(df5
             x=list(coverage_means_df["Sample"]),
             y=list(coverage_means_df["Segment"]),
-            z=list(coverage_means_df[cov_header].fillna(0)),
+            z=list(coverage_means_df[cov_header]),
             zmin=0,
             zmid=100,
             zmax=cov_max,
-            colorscale="Blugrn",
+            colorscale="gnbu",
             hovertemplate="%{y} = %{z:,.0f}x<extra>%{x}<br></extra>"
         )
     )
@@ -454,19 +452,20 @@ def createheatmap(irma_path, coverage_means_df):
     pio.write_json(fig, f"{irma_path}/heatmap.json")
     print(f"  -> coverage heatmap json saved to {irma_path}/heatmap.json")
 
+
 def create_passfail_heatmap(irma_path, pass_fail_df):
     print("Building pass_fail_heatmap")
-    pass_fail_df = pass_fail_df.reset_index().melt(id_vars=["Sample"], value_name="Reasons")
+    pass_fail_df = pass_fail_df.fillna('No assembly').reset_index().melt(id_vars=["Sample"], value_name="Reasons")
     if virus == 'flu':
         pass_fail_df['Reference'] = pass_fail_df['Reference'].apply(lambda x: x.split('_')[1])
     pass_fail_df = pass_fail_df.dropna()
     def assign_number(reason):
-        if str(reason) == 'nan':
-            return numpy.nan
+        if reason == 'No assembly':
+            return 4
         elif reason == 'Pass':
-            return numpy.nan
+            return -4#numpy.nan
         elif reason == 'Premature stop codon':
-            return -4
+            return -1
         else:
             return len(reason.split(';'))
     pass_fail_df['Number'] = pass_fail_df['Reasons'].apply(lambda x: assign_number(x))
@@ -477,9 +476,9 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
         z=list(pass_fail_df["Number"]),
         customdata=list(pass_fail_df['Reasons']),
         zmin=-4,
-        zmax=4,
-        zmid=-1,
-        colorscale='ylorrd',
+        zmax=6,
+        zmid=1,
+        colorscale='blackbody_r',# 'ylorrd',
         hovertemplate="%{x}<br>%{customdata}<extra>%{y}<br></extra>"
     ))
     fig.update_xaxes(side="top")
@@ -487,6 +486,7 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
     fig.update_layout(paper_bgcolor='white', plot_bgcolor='white')
     pio.write_json(fig, f"{irma_path}/pass_fail_heatmap.json")
     print(f"  -> pass_fail heatmap json saved to {irma_path}/pass_fail_heatmap.json")
+
 
 def createsankey(irma_path, read_df):
     print(f"Building read sankey plot")
@@ -622,6 +622,7 @@ def createcoverageplot(irma_path, coverage_df, segments, segcolor):
 
 
 def generate_figs(irma_path, read_df, coverage_df, segments, segcolor, pass_fail_df):
+    createReadPieFigure(irma_path, read_df)
     createsankey(irma_path, read_df)
     createheatmap(irma_path, pivot4heatmap(coverage_df))
     create_passfail_heatmap(irma_path, pass_fail_df)
