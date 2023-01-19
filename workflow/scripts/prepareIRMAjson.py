@@ -75,7 +75,7 @@ def negative_qc_statement(irma_reads_df, negative_list=""):
     if negative_list == "":
         sample_list = list(irma_reads_df["Sample"].unique())
         negative_list = [i for i in sample_list if "PCR" in i]
-    irma_reads_df = irma_reads_df.pivot("Sample", columns="Record", values="Reads")
+    irma_reads_df = irma_reads_df.pivot("Sample", columns="Record", values="Reads").fillna(0)
     if "3-altmatch" in irma_reads_df.columns:
         irma_reads_df["Percent Mapping"] = (
             irma_reads_df["3-match"] + irma_reads_df["3-altmatch"]
@@ -363,7 +363,8 @@ def generate_dfs(irma_path):
         return dais_seq_df
     if virus == "flu":
         nt_seqs_df = flu_dais_modifier(vtype_df, nt_seqs_df)
-    nt_seqs_df = nt_seqs_df.merge(irma_summary_df[['Sample', 'Reference']], how='left', on=['Sample', 'Reference'])
+    else:
+        nt_seqs_df = nt_seqs_df.merge(irma_summary_df[['Sample', 'Reference']], how='left', on=['Sample'])
     print("Building pass_fail_df")
     pass_fail_df = pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df)
     with open(f"{irma_path}/pass_fail_qc.json", "w") as out:
