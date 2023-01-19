@@ -15,7 +15,7 @@ rule all:
         'IRMA/prepareIRMAjson.fin'
     shell:
         #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT flu'
-        "echo DONEDONE"
+        "touch IRMA/all.fin"
 
 rule gather_fastqs:
     input:
