@@ -219,7 +219,7 @@ rule cleanup:
     log:
         "logs/cleanup.log"
     shell:
-        "rm IRMA/*_bartrim_*.fastq && rm IRMA/cat*.fastq.gz && rm IRMA/*.decision && touch {output}"
+        "rm IRMA/*_bartrim_*.fastq && rm IRMA/cat*.fastq.gz && rm IRMA/*.decision && touch {output} || touch {output}"
 
 rule finishup:
     input:
