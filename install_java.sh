@@ -3,7 +3,7 @@
 # Wrapper to install downloadeded packages 
 
 PACKAGE_ROOT=/opt/java
-RESOURCE_ROOT=/SC2-spike-seq
+RESOURCE_ROOT=/spyne
 java_orig=${RESOURCE_ROOT}/java/java_file.txt
 java_clean=${RESOURCE_ROOT}/java/java_file_clean.txt
 

@@ -3,7 +3,7 @@
 # Wrapper to perform genome assembly 
 
 # Run whatever Bash commands here
-RESOURCE_ROOT=/SC2-spike-seq
+RESOURCE_ROOT=/spyne
 BBTOOLS_ROOT=/opt/bbtools
 JAVA_ROOT=/opt/java
 

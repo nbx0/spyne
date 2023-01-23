@@ -2,7 +2,7 @@
 #!/bin/bash
 # Wrapper to install downloaded packages
 
-RESOURCE_ROOT=/SC2-spike-seq
+RESOURCE_ROOT=/spyne
 docker_file_orig=${RESOURCE_ROOT}/docker/docker_file.txt
 docker_file_clean=${RESOURCE_ROOT}/docker/docker_file_clean.txt
 
