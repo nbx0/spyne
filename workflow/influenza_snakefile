@@ -28,9 +28,29 @@ rule gather_fastqs:
     shell:
         "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq}"
 
-rule barcode_trim_left:
+rule subsample:
     input:
         ancient("IRMA/cat_{barcode}.fastq.gz")
+    output:
+        "IRMA/{barcode}_subsampled.fastq"
+    log:
+        out = "logs/{barcode}.reformat.stdout.log",
+        err = "logs/{barcode}.reformat.stderr.log"
+    group:
+        "trim-map"
+    message: "Step 4b - subsampling cleaned up read if excess > 5K exist"
+    shell:
+        "reformat.sh"
+        " in={input}"
+        " out={output}"
+        " samplereadstarget=5000"
+        " qin=33"
+        " 1> {log.out}"
+        " 2> {log.err}"
+
+rule barcode_trim_left:
+    input:
+        "IRMA/{barcode}_subsampled.fastq"
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
     log:
@@ -101,28 +121,6 @@ rule cutadapt:
     message: "Step 4 - clipping reads on both sides"
     shell:
         "cutadapt -u 30 -u -30 --output {output} {input} 1> {log.out} 2> {log.err}"
-
-
-
-rule subsample:
-    input:
-        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
-    output:
-        "IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq"
-    log:
-        out = "logs/{barcode}.reformat.stdout.log",
-        err = "logs/{barcode}.reformat.stderr.log"
-    group:
-        "trim-map"
-    message: "Step 4b - subsampling cleaned up read if excess > 1M exist"
-    shell:
-        "reformat.sh"
-        " in={input}"
-        " out={output}"
-        " samplereadstarget=1000000"
-        " qin=33"
-        " 1> {log.out}"
-        " 2> {log.err}"
 
 rule irma:
     input:
