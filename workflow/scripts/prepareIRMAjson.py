@@ -162,10 +162,10 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     ref_covered_df[
         "Reason_b"
     ] = f"Less than {qc_values[platform]['perc_ref_covered']}% of reference covered"
-    mean_cov_df = irma_summary_df[
-        (irma_summary_df["Mean Coverage"] < qc_values[platform]["mean_cov"])
+    med_cov_df = irma_summary_df[
+        (irma_summary_df["Median Coverage"] < qc_values[platform]["med_cov"])
     ][["Sample", "Reference"]]
-    mean_cov_df["Reason_c"] = f"Mean coverage < {qc_values[platform]['mean_cov']}"
+    med_cov_df["Reason_c"] = f"Median coverage < {qc_values[platform]['med_cov']}"
     minor_vars_df = irma_summary_df[
         (
             irma_summary_df["Count of Minor SNVs >= 0.05"]
@@ -176,7 +176,7 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
         "Reason_d"
     ] = f"Count of minor variants at or over 5% > {qc_values[platform]['minor_vars']}"
     combined = ref_covered_df.merge(
-        mean_cov_df, how="outer", on=["Sample", "Reference"]
+        med_cov_df, how="outer", on=["Sample", "Reference"]
     )
     combined = combined.merge(minor_vars_df, how="outer", on=["Sample", "Reference"])
     combined = combined.merge(pre_stop_df, how="outer", on=["Sample", "Reference"])
@@ -279,16 +279,19 @@ def irma_summary(
     cov_ref_lens = cov_ref_lens[
         ["Sample", "Reference_Name", "% Reference Covered"]
     ].rename(columns={"Reference_Name": "Reference"})
+############################################################################################ !!! This need to be updated when we add full SC2 genome!    
+    if virus.lower() == 'sc2':
+        coverage_df = coverage_df[coverage_df['HMM_Position'].between(21563,25384)]
     coverage_df = (
         coverage_df.groupby(["Sample", "Reference_Name"])
-        .agg({"Coverage Depth": "mean"})
+        .agg({"Coverage Depth": "median"})
         .reset_index()
         .rename(
-            columns={"Coverage Depth": "Mean Coverage", "Reference_Name": "Reference"}
+            columns={"Coverage Depth": "Median Coverage", "Reference_Name": "Reference"}
         )
     )
-    coverage_df["Mean Coverage"] = (
-        coverage_df[["Mean Coverage"]].applymap(lambda x: f"{x:.0f}").astype(float)
+    coverage_df["Median Coverage"] = (
+        coverage_df[["Median Coverage"]].applymap(lambda x: f"{x:.0f}").astype(float)
     )
     summary_df = (
         reads_df.merge(cov_ref_lens, "left")
@@ -412,8 +415,10 @@ def pivot4heatmap(coverage_df):
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
+    if virus.lower() == 'sc2':
+        coverage_df = coverage_df[coverage_df['HMM_Position'].between(21563,25384)]
     df2 = coverage_df[["Sample", "Reference_Name", cov_header]]
-    df3 = df2.groupby(["Sample", "Reference_Name"]).mean().reset_index()
+    df3 = df2.groupby(["Sample", "Reference_Name"]).median().reset_index()
     try:
         df3[["Subtype", "Segment", "Group"]] = df3["Reference_Name"].str.split(
             "_", expand=True
@@ -424,23 +429,23 @@ def pivot4heatmap(coverage_df):
     return df4
 
 
-def createheatmap(irma_path, coverage_means_df):
+def createheatmap(irma_path, coverage_medians_df):
     print(f"Building coverage heatmap")
-    if "Coverage_Depth" in coverage_means_df.columns:
+    if "Coverage_Depth" in coverage_medians_df.columns:
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
-    coverage_means_df = coverage_means_df.pivot(index='Sample',columns='Segment').fillna(0).reset_index().melt(id_vars='Sample', value_name=cov_header).drop([None], axis=1)
-    cov_max = coverage_means_df[cov_header].max()
+    coverage_medians_df = coverage_medians_df.pivot(index='Sample',columns='Segment').fillna(0).reset_index().melt(id_vars='Sample', value_name=cov_header).drop([None], axis=1)
+    cov_max = coverage_medians_df[cov_header].max()
     if cov_max <= 200:
         cov_max = 200
     elif cov_max >= 1000:
         cov_max = 1000
     fig = go.Figure(
         data=go.Heatmap(  # px.imshow(df5
-            x=list(coverage_means_df["Sample"]),
-            y=list(coverage_means_df["Segment"]),
-            z=list(coverage_means_df[cov_header]),
+            x=list(coverage_medians_df["Sample"]),
+            y=list(coverage_medians_df["Segment"]),
+            z=list(coverage_medians_df[cov_header]),
             zmin=0,
             zmid=100,
             zmax=cov_max,
@@ -584,8 +589,8 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         type="line",
         x0=0,
         x1=df2[pos_header].max(),
-        y0=qc_values[platform]['mean_cov'],
-        y1=qc_values[platform]['mean_cov'],
+        y0=qc_values[platform]['med_cov'],
+        y1=qc_values[platform]['med_cov'],
         line=dict(color="Black", dash="dash", width=5),
     )
     ymax = df2[cov_header].max()
