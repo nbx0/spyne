@@ -1,5 +1,5 @@
 ont:
-  mean_cov: 50 # mean coverage depth across reference
+  med_cov: 50 # mean coverage depth across reference
   minor_vars: 10 # maximum allowed minor variants >= 5%
   allow_stop_codons: False # True = allow premature stop codons; False = do not allow
   perc_ref_covered: 90 # Mimimum % of reference to cover
@@ -7,7 +7,7 @@ ont:
   negative_control_perc_exception: 10 # ignore `negative_control_perc` is total negative reads mapping to reference is less than this value
   positive_control_minimum: 1000 # minimum number of reads required to match to expected reference to pass positive controls
 illumina:
-  mean_cov: 100 # mean coverage depth across reference
+  med_cov: 100 # mean coverage depth across reference
   minor_vars: 10 # maximum allowed minor variants >= 5%
   allow_stop_codons: False # True = allow premature stop codons; False = do not allow
   perc_ref_covered: 90 # Mimimum % of reference to cover
