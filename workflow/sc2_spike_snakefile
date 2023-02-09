@@ -121,7 +121,7 @@ rule cutadapt:
 
 rule irma:
     input:
-        ancient("IRMA/{barcode}_bartrim_lr_cutadapt_subsampled.fastq")
+        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
     output:
         touch("IRMA/{barcode}.irma.fin")
     log:
