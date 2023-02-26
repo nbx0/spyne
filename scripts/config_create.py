@@ -78,17 +78,48 @@ if "ont" in experiment_type.lower():
 else:
     snakefile_path += "illumina_influenza_snakefile"
 
-
-snake_cmd = (
+if "TESTDEV-QUICK" in argv:
+    snake_cmd = (
         f"snakemake -s {snakefile_path} \
         --configfile config.yaml \
         --cores 4 	\
         --printshellcmds \
-	    --restart-times 10 \
-	    --rerun-incomplete \
-	    --latency-wait 600 "
+        --rerun-incomplete"
     )
+elif "TESTDEV-PRINTDAG" in argv:
+    snake_cmd = (
+        f"snakemake -s {snakefile_path} \
+        --configfile config.yaml \
+        --cores 4 	\
+        --printshellcmds \
+        --dag |awk '/digraph/,/\u007d/' |dot -Tpdf > filegraph.pdf"
+    ) 
+elif "TESTDEV-DEBUGDAG" in argv:
+    snake_cmd = (
+        f"snakemake -s {snakefile_path} \
+        --configfile config.yaml \
+        --cores 4 	\
+        --printshellcmds \
+        --debug-dag"
+    ) 
+else:
+    snake_cmd = (
+            f"snakemake -s {snakefile_path} \
+            --configfile config.yaml \
+            --cores 4 	\
+            --printshellcmds \
+    	    --restart-times 10 \
+    	    --rerun-incomplete \
+    	    --latency-wait 600 "
+        )
 os.chdir(runpath.replace("fastq_pass", ""))
 print(f"\n\nSNAKEMAKE CMD:\n {snake_cmd}\n\n")
-subprocess.call(snake_cmd, shell=True)
+subprocess.run(snake_cmd, shell=True)
 
+# Remove extraneous intermediate files and tar archive logs, F1 bam and plurality consensus
+if "CLEANUP-FOOTPRINT" in argv:
+    fullsize = int(subprocess.run(f"du -d0", stdout=subprocess.PIPE, shell=True).stdout.decode().split('\t')[0])
+    subprocess.run(f"{root}/workflow/scripts/spyne_cleanup.sh", shell=True)
+    cleansize = int(subprocess.run(f"du -0", stdout=subprocess.PIPE, shell=True).stdout.decode().split('\t')[0])
+    removed = fullsize - cleansize
+    print(f"{removed/1000:.2f}MB removed\n{cleansize/1000:.2f}MB remain")
