@@ -1,5 +1,3 @@
-#!/usr/bin/env snakemake
-
 import os
 import sys
 
@@ -10,18 +8,15 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys()), 
-        'DAIS_ribosome_output.fin', 
-        'IRMA/prepareIRMAjson.fin'
+        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys())
     shell:
-        #'bash {workflow.basedir}/scripts/sc2_irma_qc.sh IRMA/ irma_qc_summary.csv ONT flu'
-        "touch IRMA/all.fin"
+        "touch IRMA/spyne.fin"
 
 rule gather_fastqs:
     input:
         "config.yaml"
     output:
-        fq = temp("IRMA/cat_{barcode}.fastq.gz")
+        fq = "IRMA/cat_{barcode}.fastq.gz"
     message: "Step 1 - merging all read files into a single file"
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
@@ -30,7 +25,7 @@ rule gather_fastqs:
 
 rule subsample:
     input:
-        ancient("IRMA/cat_{barcode}.fastq.gz")
+        rules.gather_fastqs.output
     output:
         "IRMA/{barcode}_subsampled.fastq"
     log:
@@ -38,19 +33,19 @@ rule subsample:
         err = "logs/{barcode}.reformat.stderr.log"
     group:
         "trim-map"
-    message: "Step 4b - subsampling cleaned up read if excess > 5K exist"
+    message: "Step 4b - subsampling cleaned up reads if excess > 50K exist"
     shell:
         "reformat.sh"
         " in={input}"
         " out={output}"
-        " samplereadstarget=5000"
+        " samplereadstarget=50000"
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
 
 rule barcode_trim_left:
     input:
-        "IRMA/{barcode}_subsampled.fastq"
+        rules.subsample.output
     output:
         "IRMA/{barcode}_bartrim_l.fastq"
     log:
@@ -60,7 +55,6 @@ rule barcode_trim_left:
         barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
     group:
         "trim-map"
-    
     threads: 16
     message: "Step 2 - trimming left barcode"
     shell:
@@ -77,11 +71,9 @@ rule barcode_trim_left:
         " 1> {log.out}"
         " 2> {log.err}"
 
-
-
 rule barcode_trim_right:
     input:
-        ancient("IRMA/{barcode}_bartrim_l.fastq")
+        rules.barcode_trim_left.output
     output:
         "IRMA/{barcode}_bartrim_lr.fastq"
     log:
@@ -107,10 +99,9 @@ rule barcode_trim_right:
         " 1> {log.out}"
         " 2> {log.err}"
 
-
 rule cutadapt:
     input:
-        ancient("IRMA/{barcode}_bartrim_lr.fastq")
+        rules.barcode_trim_right.output
     output:
         "IRMA/{barcode}_bartrim_lr_cutadapt.fastq"
     log:
@@ -124,7 +115,7 @@ rule cutadapt:
 
 rule irma:
     input:
-        ancient("IRMA/{barcode}_bartrim_lr_cutadapt.fastq")
+        rules.cutadapt.output
     output:
         touch("IRMA/{barcode}.irma.fin")
     log:
@@ -143,7 +134,7 @@ rule irma:
 #  here and then reevaluates the needed DAG for each sample.
 checkpoint checkirma:
     input:
-        ancient('IRMA/{barcode}.irma.fin')
+        ancient(rules.irma.output)
     output:
         'IRMA/{barcode}.irma.decision'
     log:
@@ -153,20 +144,17 @@ checkpoint checkirma:
         " echo passed > {output} ||"
         " echo failed > {output}"
 
-
-
 def passed_irma(wildcards):
     with checkpoints.checkirma.get(barcode=wildcards.barcode).\
     output[0].open() as f:
         if f.read().strip() == "passed":
-            return 'IRMA/{barcode}'
+            return rules.prepareIRMAjson.output
         else:
-            return "IRMA_negative/{barcode}"
-
+            return rules.pass_negatives.output
 
 rule pass_negatives:
     input:
-        "IRMA/{barcode}.irma.decision"
+        ancient(rules.checkirma.output)
     output:
         "IRMA_negative/{barcode}"
     shell:
@@ -179,45 +167,32 @@ rule catfiles:
         "DAIS_ribosome_input.fasta"
     message: "Step 6 - Collecting consensus genomes"
     shell:
-        "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
+        "for file in $(ls IRMA/*/amended_consensus/*.fa | grep -v pad); do cat $file >> {output}; done" 
 
 rule dais_ribosome:
     input: 
-        "DAIS_ribosome_input.fasta"
+        rules.catfiles.output
     output:
-        temp('DAIS_ribosome_output.fin')
+        touch('IRMA/DAIS_ribosome_output.fin')
     message: "Step 7 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA && touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA"
 
 rule prepareIRMAjson:
     input:
         rules.dais_ribosome.output
     output:
-        temp('IRMA/prepareIRMAjson.fin')
+        touch('IRMA/prepareIRMAjson.fin')
     message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
     log:
         "logs/prepareIRMAjson.log"
     shell:
-        "/usr/bin/python3.8 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu && touch {output}"
-
-rule cleanup:
-    input:
-        rules.prepareIRMAjson.output
-    output:
-        temp('IRMA/cleanup.fin')
-    message: "Step 9 - Removing excess intermediate files"
-    log:
-        "logs/cleanup.log"
-    shell:
-        "rm IRMA/*_bartrim_*.fastq && rm IRMA/cat*.fastq.gz && rm IRMA/*.decision && touch {output} || touch {output}"
+        "python {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu"
 
 rule finishup:
     input:
-        rules.cleanup.output
+        passed_irma    
     output:
-        temp("FLU_{barcode}.fin")
-    shell:
-        "touch {output}"
+        touch("IRMA/FLU_{barcode}.fin")
