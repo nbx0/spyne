@@ -33,7 +33,7 @@ rule subsample:
         err = "logs/{barcode}.reformat.stderr.log"
     group:
         "trim-map"
-    message: "Step 4b - subsampling cleaned up read if excess > 5K exist"
+    message: "Step 4b - subsampling cleaned up reads if excess > 5K exist"
     shell:
         "reformat.sh"
         " in={input}"
@@ -55,7 +55,6 @@ rule barcode_trim_left:
         barcode_sequence = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_sequence"]
     group:
         "trim-map"
-    
     threads: 16
     message: "Step 2 - trimming left barcode"
     shell:
@@ -127,7 +126,7 @@ rule irma:
     group:
         "trim-map"
     threads: 14
-    message: "Step 5 - assembling genome"
+    message: "Step 5 - assembling genome with IRMA"
     shell:
         "docker exec irma-1.0.2p3 IRMA CoV-s-gene /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
 
@@ -137,11 +136,11 @@ checkpoint checkirma:
     input:
         ancient(rules.irma.output)
     output:
-        temp('IRMA/{barcode}.irma.decision')
+        'IRMA/{barcode}.irma.decision'
     log:
         "logs/irma/checkirma_{barcode}.log"
     shell:
-        "[[ -s IRMA/{wildcards.barcode}/SARS-CoV-2.bam ]] &&"
+        "[[ -d IRMA/{wildcards.barcode}/figures ]] &&"
         " echo passed > {output} ||"
         " echo failed > {output}"
 
@@ -161,7 +160,6 @@ rule pass_negatives:
     shell:
         "touch {output}"
 
-
 rule catfiles:
     input:
         ancient(expand('IRMA/{barcode}.irma.decision', barcode=config["barcodes"].keys()))
@@ -175,7 +173,7 @@ rule dais_ribosome:
     input: 
         rules.catfiles.output
     output:
-        temp(touch('IRMA/DAIS_ribosome.fin'))
+        touch('IRMA/DAIS_ribosome.fin')
     message: "Step 7 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
     log:
         "logs/dais_ribosome/dais_ribosome.log"
@@ -186,7 +184,7 @@ rule prepareIRMAjson:
     input:
         rules.dais_ribosome.output
     output:
-        temp(touch('IRMA/prepareIRMAjson.fin'))
+        touch('IRMA/prepareIRMAjson.fin')
     message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
     log:
         "logs/prepareIRMAjson.log"
@@ -197,4 +195,4 @@ rule finishup:
     input:
         passed_irma
     output:
-        touch(temp("IRMA/SC2.{barcode}.fin"))
+        touch("IRMA/SC2.{barcode}.fin")
