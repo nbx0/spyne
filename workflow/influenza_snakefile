@@ -189,7 +189,7 @@ rule prepareIRMAjson:
     log:
         "logs/prepareIRMAjson.log"
     shell:
-        "python {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu"
+        "python3 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu"
 
 rule finishup:
     input:
