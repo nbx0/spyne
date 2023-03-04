@@ -8,7 +8,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("FLU_{barcode}.fin", barcode=config["barcodes"].keys())
+        expand("IRMA/FLU_{barcode}.fin", barcode=config["barcodes"].keys())
     shell:
         "touch IRMA/spyne.fin"
 
@@ -128,7 +128,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome with IRMA"
     shell:
-        "docker exec irma-1.0.2p3 IRMA FLU-minion /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
+        "docker exec irma IRMA FLU-minion /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
