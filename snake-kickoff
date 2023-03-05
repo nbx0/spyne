@@ -32,12 +32,9 @@ docker --version
 # Kill any running snakemake processes
 #kill -9 $(ps -A | grep snakemake | awk '{print $1}')
 
-# Remove .snakemake directory to assure locks are gone
-#run_path=$(dirname $(readlink -f $1))
-#rm -fr $run_path/.snakemake $run_path/*.fin
+run_path=$(dirname $(readlink -f $1))
 
 # Create config.yaml from samplesheet
-python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
-while (ls ${2}/*fin >/dev/null 2>&1); do
-	python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
+until [ -f ${run_path}/dash-json/heatmap.json ]; do
+	python3 $RESOURCE_ROOT/scripts/config_create.py "$@" CLEANUP-FOOTPRINT
 done
