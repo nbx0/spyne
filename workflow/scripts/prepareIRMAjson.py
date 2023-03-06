@@ -68,7 +68,7 @@ ref_proteins = {
     "PA": "A_PA B_PA",
 }
 
-makedirs(f"{irma_path}/../dash-json")
+makedirs(f"{irma_path}/../dash-json", exist_ok=True)
 ###############################################################
 ## Dataframes
 ###############################################################
