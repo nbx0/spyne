@@ -1,10 +1,12 @@
 import yaml
 from os.path import abspath
-from sys import argv, exit
+from sys import argv, exit, version
 import pandas as pd
 from glob import glob
 import subprocess
 import os
+
+#print(sys.version)
 
 root = "/".join(abspath(__file__).split("/")[:-2])
 if len(argv) < 2:
@@ -62,8 +64,17 @@ if 'ont' in experiment_type.lower():
 else:
     data = {'runid':runpath.split('/')[-1], 'samples':{}}
     for d in dfd.values():
+        id = d['Sample ID']
+        R1_fastq = glob(f"{runpath}/**/{id}*R1*fastq.gz")[0]
+        print(R1_fastq)
+        R2_fastq = glob(f"{runpath}/**/{id}*R2*fastq.gz")[0]
+        if len(R1_fastq) < 1 or len(R2_fastq) < 1:
+            print(f"Fastq pair not found for sample {id}")
+            exit()
         data["samples"][d["Sample ID"]] = {
-                "sample_type": d["Sample Type"]
+                "sample_type": d["Sample Type"],
+                "R1_fastq": R1_fastq.replace(f'{runpath}/',''), 
+                "R2_fastq": R2_fastq.replace(f'{runpath}/',''), 
             }
 with open(runpath.replace("fastq_pass", "") + "/config.yaml", "w") as out:
     yaml.dump(data, out, default_flow_style=False)

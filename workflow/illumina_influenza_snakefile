@@ -1,5 +1,3 @@
-#!/usr/bin/env snakemake
-
 import os
 import sys
 import glob
@@ -11,15 +9,40 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("FLU_{sample}.fin", sample=config["samples"].keys()), 'DAIS_ribosome_output.fin'
+        expand("IRMA/FLU_{sample}.fin", sample=config["samples"].keys())
     shell:
-        "echo DONEDONE"
+        "touch IRMA/spyne.fin"
+
+
+rule subsample:
+    input:
+        R1_fastq = lambda wildcards: config["samples"][wildcards.sample]["R1_fastq"],
+        R2_fastq = lambda wildcards: config["samples"][wildcards.sample]["R2_fastq"]
+    output:
+        O1 = "IRMA/{sample}_subsampled_R1.fastq",
+        O2 = "IRMA/{sample}_subsampled_R2.fastq"
+    log:
+        out = "logs/{sample}.reformat.stdout.log",
+        err = "logs/{sample}.reformat.stderr.log"
+    group:
+        "trim-map"
+    message: "Step 1 - subsampling cleaned up reads if excess > 100K exist"
+    shell:
+        "reformat.sh"
+        " in1={input.R1_fastq}"
+        " in2={input.R2_fastq}"
+        " out1={output.O1}"
+        " out2={output.O2}"
+        " samplereadstarget=100000"
+        " qin=33"
+        " 1> {log.out}"
+        " 2> {log.err}"
 
 rule irma:
     input:
-        glob.iglob("fastqs/*/{sample}*R1*.fastq*")
+        rules.subsample.output
     output:
-        temp(touch("IRMA/{sample}.irma.fin"))
+        touch("IRMA/{sample}.irma.fin")
     log:
         out = "logs/{sample}.irma.stdout.log",
         err = "logs/{sample}.irma.stderr.log"
@@ -30,7 +53,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome with IRMA"
     shell:
-        "docker exec irma-1.0.2p3 IRMA FLU /data/{config[runid]}/fastqs/*/{wildcards.sample}*R1*.fastq* /data/{config[runid]}/fastqs/*/{wildcards.sample}*R2*.fastq*  /data/{config[runid]}/IRMA/{wildcards.sample} 2> {log.err} |tee -a {log.out}"
+        "docker exec irma IRMA FLU /data/{config[runid]}/IRMA/{wildcards.sample}_subsampled_R1.fastq /data/{config[runid]}/IRMA/{wildcards.sample}_subsampled_R2.fastq  /data/{config[runid]}/IRMA/{wildcards.sample} 2> {log.err} |tee -a {log.out}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
@@ -38,7 +61,7 @@ checkpoint checkirma:
     input:
         ancient('IRMA/{sample}.irma.fin')
     output:
-        temp('IRMA/{sample}.irma.decision')
+        'IRMA/{sample}.irma.decision'
     log:
         "logs/irma/checkirma_{sample}.log"
     shell:
@@ -52,14 +75,14 @@ def passed_irma(wildcards):
     with checkpoints.checkirma.get(sample=wildcards.sample).\
     output[0].open() as f:
         if f.read().strip() == "passed":
-            return 'IRMA/{sample}'
+            return rules.prepareIRMAjson.output
         else:
-            return "IRMA_negative/{sample}"
+            return rules.pass_negatives.output
 
 
 rule pass_negatives:
     input:
-        "IRMA/{sample}.irma.decision"
+        ancient(rules.checkirma.output)
     output:
         "IRMA_negative/{sample}"
     shell:
@@ -69,28 +92,36 @@ rule catfiles:
     input:
         expand('IRMA/{sample}.irma.decision', sample=config["samples"].keys())
     output:
-        temp("DAIS_ribosome_input.fasta")
+        "DAIS_ribosome_input.fasta"
     message: "Step 6 - Collecting consensus genomes"
     shell:
         "cat IRMA/*/amended_consensus/*.fa > {output} || touch {output}"
 
 rule dais_ribosome:
     input: 
-        "DAIS_ribosome_input.fasta"
+        rules.catfiles.output
     output:
-        temp('DAIS_ribosome_output.fin')
+        touch('DAIS_ribosome_output.fin')
     message: "Step 7 - Translating sequences into open reading frames (ORFs) with DAIS-Ribosome"
     log:
         "logs/dais_ribosome/dais.ribosome.log"
     shell:
-        "{workflow.basedir}/scripts/daiswrapper.sh -i /data/{config[runid]}/{input} -m INFLUENZA && touch {output} || touch {output}"
+        "{workflow.basedir}/scripts/daiswrapper.sh -i {config[runid]}/{input} -m INFLUENZA"
 
+rule prepareIRMAjson:
+    input:
+        rules.dais_ribosome.output
+    output:
+        touch('IRMA/prepareIRMAjson.fin')
+    message: "Step 8 - Creating Plotly-Dash readable figures and tables for IRMA-SPY"
+    log:
+        "logs/prepareIRMAjson.log"
+    shell:
+        "python3 {workflow.basedir}/scripts/prepareIRMAjson.py IRMA samplesheet.csv ont flu"
 
 
 rule finishup:
     input:
         passed_irma
     output:
-        temp("FLU_{sample}.fin")
-    shell:
-        "touch {output}"
+        touch("IRMA/FLU_{sample}.fin")
