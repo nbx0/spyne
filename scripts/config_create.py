@@ -1,12 +1,11 @@
 import yaml
 from os.path import abspath
-from sys import argv, exit, version
+from sys import argv, exit
 import pandas as pd
 from glob import glob
 import subprocess
 import os
 
-#print(sys.version)
 
 root = "/".join(abspath(__file__).split("/")[:-2])
 if len(argv) < 2:
