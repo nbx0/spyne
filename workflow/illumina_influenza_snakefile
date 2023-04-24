@@ -34,7 +34,6 @@ rule subsample:
         " out1={output.O1}"
         " out2={output.O2}"
         " samplereadstarget=100000"
-        " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
 

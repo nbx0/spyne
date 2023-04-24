@@ -465,7 +465,7 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
     print("Building pass_fail_heatmap")
     pass_fail_df = pass_fail_df.fillna('No assembly').reset_index().melt(id_vars=["Sample"], value_name="Reasons")
     if virus == 'flu':
-        pass_fail_df['Reference'] = pass_fail_df['Reference'].apply(lambda x: x.split('_')[1])
+        pass_fail_df['Reference'] = pass_fail_df['Reference'].apply(lambda x: "_".join(x.split('_')[0:2]))
     pass_fail_df = pass_fail_df.dropna()
     def assign_number(reason):
         if reason == 'No assembly':
