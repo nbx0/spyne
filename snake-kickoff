@@ -35,6 +35,4 @@ docker --version
 run_path=$(dirname $(readlink -f $1))
 
 # Create config.yaml from samplesheet
-until [ -f ${run_path}/spyne_logs.tar.gz ]; do
-	python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
-done
+python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
