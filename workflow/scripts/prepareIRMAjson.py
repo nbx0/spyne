@@ -30,7 +30,7 @@ with open(
     qc_values = yaml.safe_load(y)
 
 proteins = {
-    "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a M N ORF3a E",
+    "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a ORF7b M N ORF3a E",
     "flu": "PB1-F2 HA M1 NP HA1 BM2 NB PB2 NEP PB1 HA-signal PA-X NS1 M2 NA PA",
 }
 ref_proteins = {
@@ -40,6 +40,7 @@ ref_proteins = {
     "ORF6": "SARS-CoV-2",
     "ORF8": "SARS-CoV-2",
     "ORF7a": "SARS-CoV-2",
+    "ORF7b": "SARS-CoV-2",
     "M": "SARS-CoV-2",
     "N": "SARS-CoV-2",
     "ORF3a": "SARS-CoV-2",
@@ -550,14 +551,15 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         orf_pos = {
             "orf1ab": (266, 21556),
             "S": [21563, 25385],
-            "orf3a": [25393, 26221],
+            "ORF3a": [25393, 26221],
             "E": [26245, 26473],
             "M": [26523, 27192],
-            "orf6": [27202, 27388],
-            "orf7ab": [27394, 27888],
-            "orf8": [27894, 28260],
+            "ORF6": [27202, 27388],
+            "ORF7a": [27394, 27755],
+            "ORF7b": [27756, 27888],
+            "ORF8": [27894, 28260],
             "N": [28274, 29534],
-            "orf10": [29558, 29675],
+            "ORF10": [29558, 29675],
         }
         color_index = 0
         for orf, pos in orf_pos.items():
