@@ -30,7 +30,7 @@ with open(
     qc_values = yaml.safe_load(y)
 
 proteins = {
-    "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a ORF7b M N ORF3a E",
+    "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a ORF7b M N ORF3a E ORF9b",
     "flu": "PB1-F2 HA M1 NP HA1 BM2 NB PB2 NEP PB1 HA-signal PA-X NS1 M2 NA PA",
 }
 ref_proteins = {
@@ -45,6 +45,7 @@ ref_proteins = {
     "N": "SARS-CoV-2",
     "ORF3a": "SARS-CoV-2",
     "E": "SARS-CoV-2",
+    "ORF9b" : "SARS-CoV-2",
     "SARS-CoV-2": "SARS-CoV-2",
     "PB1-F2": "A_PB1 B_PB1",
     "HA": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
@@ -555,24 +556,26 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
             "E": [26245, 26473],
             "M": [26523, 27192],
             "ORF6": [27202, 27388],
-            "ORF7a": [27394, 27755],
-            "ORF7b": [27756, 27888],
+            "ORF7a": [27394, 27759],
+            "ORF7b": [27756, 27887],
             "ORF8": [27894, 28260],
             "N": [28274, 29534],
             "ORF10": [29558, 29675],
+            "ORF9b" : [28284, 28577]
         }
         color_index = 0
+        print(orf_pos)
         for orf, pos in orf_pos.items():
             fig.add_trace(
                 go.Scatter(
                     x=[pos[0], pos[1], pos[1], pos[0], pos[0]],
                     y=[oy, oy, 0, 0, oy],
                     fill="toself",
-                    fillcolor=px.colors.qualitative.T10[color_index],
-                    line=dict(color=px.colors.qualitative.T10[color_index]),
+                    fillcolor=px.colors.qualitative.Set3[color_index],
+                    line=dict(color=px.colors.qualitative.Set3[color_index]),
                     mode="lines",
                     name=orf,
-                    opacity=0.4,
+                    opacity=0.8,
                 )
             )
             color_index += 1
