@@ -10,7 +10,7 @@ import os
 root = "/".join(abspath(__file__).split("/")[:-2])
 if len(argv) < 2:
     exit(
-        "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type>\n".format(__file__)
+        "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type> <optional: primer_schema>\n".format(__file__)
     )
 
 try:
@@ -18,6 +18,12 @@ try:
     experiment_type = argv[3]
 except (IndexError, ValueError):
     runid = "testRunID"
+try:
+    if len(argv[4]) > 1:
+        primer_schema = argv[4]
+        amplicon = True
+except:
+    amplicon = False
 df = pd.read_csv(argv[1])
 dfd = df.to_dict("index")
 
@@ -65,12 +71,19 @@ else:
     for d in dfd.values():
         id = d['Sample ID']
         R1_fastq = glob(f"{runpath}/**/{id}*R1*fastq.gz")[0]
-        print(R1_fastq)
         R2_fastq = glob(f"{runpath}/**/{id}*R2*fastq.gz")[0]
         if len(R1_fastq) < 1 or len(R2_fastq) < 1:
             print(f"Fastq pair not found for sample {id}")
             exit()
-        data["samples"][d["Sample ID"]] = {
+        if amplicon:
+            data["samples"][d["Sample ID"]] = {
+                "sample_type": d["Sample Type"],
+                "R1_fastq": R1_fastq.replace(f'{runpath}/',''), 
+                "R2_fastq": R2_fastq.replace(f'{runpath}/',''), 
+                "Library" : primer_schema
+            }
+        else:
+            data["samples"][d["Sample ID"]] = {
                 "sample_type": d["Sample Type"],
                 "R1_fastq": R1_fastq.replace(f'{runpath}/',''), 
                 "R2_fastq": R2_fastq.replace(f'{runpath}/',''), 
@@ -86,7 +99,10 @@ if "ont" in experiment_type.lower():
     elif "sc2" in experiment_type.lower():
         snakefile_path += "sc2_spike_snakefile"
 else:
-    snakefile_path += "illumina_influenza_snakefile"
+    if "flu" in experiment_type.lower():
+        snakefile_path += "illumina_influenza_snakefile"
+    elif "sc2" in experiment_type.lower():
+        snakefile_path += "illumina_sc2_snakefile"
 
 if "TESTDEV-QUICK" in argv:
     snake_cmd = (
