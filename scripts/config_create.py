@@ -19,7 +19,7 @@ try:
 except (IndexError, ValueError):
     runid = "testRunID"
 try:
-    if len(argv[4]) > 1:
+    if "CLEANUP" not in argv[4]:
         primer_schema = argv[4]
         amplicon = True
 except:

@@ -53,7 +53,9 @@ primers =	{'swift':	{'bedpe':'{}/primers/SNAP_v2_amplicon_panel.bedpe'.format(wo
             'qiagen': {'bedpe':'{}/primers/QIAseqDIRECTSARSCoV2primersfinal.bedpe'.format(workflow.basedir),
                         'fasta':'{}/primers/QIAseqDIRECTSARSCoV2primersfinal.fasta'.format(workflow.basedir)},
             'swift_211206': {'bedpe':'{}/primers/swift_211206.bedpe'.format(workflow.basedir),
-                        'fasta':'{}/primers/swift_211206.fasta'.format(workflow.basedir)}
+                        'fasta':'{}/primers/swift_211206.fasta'.format(workflow.basedir)},
+            'articv5.3.2' : {'bedpe':'{}/primers/artic_v5.3.2_IRMAref.bedpe'.format(workflow.basedir),
+                          'fasta':'{}/primers/artic_v5.3.2.fasta'.format(workflow.basedir)}
             }
 
 rule bbduk_r1:
