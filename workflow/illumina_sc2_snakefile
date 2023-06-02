@@ -8,6 +8,9 @@ shell.executable("bash")
 workdir: "."
 configfile: "config.yaml"
 
+config["samples"] = {str(k): v for k, v in config["samples"].items()}
+config["samples"] = OrderedDict([(key, config["samples"][key]) for key in config["samples"] ])
+
 rule all:
     input:
         expand("IRMA/SC2_{sample}.fin", sample=config["samples"].keys())
