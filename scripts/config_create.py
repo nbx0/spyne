@@ -19,9 +19,12 @@ try:
 except (IndexError, ValueError):
     runid = "testRunID"
 try:
+    print(argv[4])
     if "CLEANUP" not in argv[4]:
         primer_schema = argv[4]
         amplicon = True
+    else:
+        amplicon = False
 except:
     amplicon = False
 df = pd.read_csv(argv[1])
