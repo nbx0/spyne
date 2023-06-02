@@ -222,7 +222,7 @@ def irma_summary(
     irma_path, samplesheet, reads_df, indels_df, alleles_df, coverage_df, ref_lens
 ):
     ss_df = pd.read_csv(samplesheet)
-    allsamples_df = ss_df[['Sample ID']].rename(columns={'Sample ID':'Sample'})
+    allsamples_df = ss_df[['Sample ID']].rename(columns={'Sample ID':'Sample'}).astype(str)
     neg_controls = list(ss_df[ss_df["Sample Type"] == "- Control"]["Sample ID"])
     qc_statement = negative_qc_statement(reads_df, neg_controls)
     with open(f"{irma_path}/../dash-json/qc_statement.json", "w") as out:
