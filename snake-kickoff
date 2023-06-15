@@ -34,6 +34,11 @@ docker --version
 
 run_path=$(dirname $(readlink -f $1))
 
+# Archive previous run
+if [ -f ${run_path}/spyne_logs.tar.gz ]; then
+	tar -czf previous_run_$(date -d @$(stat -c %Y spyne_logs.tar.gz) "+%Y%b%d-%H%M%S").tar.gz 
+fi
+
 # Create config.yaml from samplesheet
 until [ -f ${run_path}/spyne_logs.tar.gz ]; do
 	python3 $RESOURCE_ROOT/scripts/config_create.py "$@"
