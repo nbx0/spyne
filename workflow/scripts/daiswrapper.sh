@@ -7,6 +7,7 @@ do
 	esac
 done
 
+#remove this section once dais merge request is complete to allow dashes in samplename!
 sed -i 's/-/_/g' $input || sed -i 's/-/_/g' $(basename $input)
 
 dais_out=$(echo $input|cut -d '.' -f 1)
