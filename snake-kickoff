@@ -36,7 +36,7 @@ run_path=$(dirname $(readlink -f $1))
 
 # Archive previous run
 if [ -f ${run_path}/spyne_logs.tar.gz ]; then
-	tar  --remove-files -czf previous_run_$(date -d @$(stat -c %Y spyne_logs.tar.gz) "+%Y%b%d-%H%M%S").tar.gz ${run_path}/spyne_logs.tar.gz
+	tar  --remove-files -czf ${run_path}/previous_run_$(date -d @$(stat -c %Y ${run_path}/spyne_logs.tar.gz) "+%Y%b%d-%H%M%S").tar.gz ${run_path}/spyne_logs.tar.gz ${run_path}/*fasta ${run_path}/dash-json ${run_path}/irma_allconsensus_bam.tar.gz ${run_path}/config.yaml ${run_path}/.snakemake
 fi
 
 # Create config.yaml from samplesheet

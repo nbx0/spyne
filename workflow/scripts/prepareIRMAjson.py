@@ -9,6 +9,8 @@ import plotly.express as px
 import plotly.io as pio
 from dash import html
 import yaml
+import time
+from glob import glob
 
 path.append(op.dirname(op.realpath(__file__)))
 import irma2pandas  # type: ignore
@@ -25,7 +27,8 @@ except IndexError:
 
 # Load qc config:
 with open(
-    op.dirname(op.dirname(op.realpath(__file__))) + "/irma_config/qc_pass_fail_settings.yaml"
+    op.dirname(op.dirname(op.realpath(__file__)))
+    + "/irma_config/qc_pass_fail_settings.yaml"
 ) as y:
     qc_values = yaml.safe_load(y)
 
@@ -45,7 +48,7 @@ ref_proteins = {
     "N": "SARS-CoV-2",
     "ORF3a": "SARS-CoV-2",
     "E": "SARS-CoV-2",
-    "ORF9b" : "SARS-CoV-2",
+    "ORF9b": "SARS-CoV-2",
     "SARS-CoV-2": "SARS-CoV-2",
     "PB1-F2": "A_PB1 B_PB1",
     "HA": "A_HA_H10 A_HA_H11 A_HA_H12 A_HA_H13 A_HA_H14 A_HA_H15 A_HA_H16 A_HA_H1 \
@@ -75,11 +78,14 @@ makedirs(f"{irma_path}/../dash-json", exist_ok=True)
 ## Dataframes
 ###############################################################
 
+
 def negative_qc_statement(irma_reads_df, negative_list=""):
     if negative_list == "":
         sample_list = list(irma_reads_df["Sample"].unique())
         negative_list = [i for i in sample_list if "PCR" in i]
-    irma_reads_df = irma_reads_df.pivot("Sample", columns="Record", values="Reads").fillna(0)
+    irma_reads_df = irma_reads_df.pivot(
+        "Sample", columns="Record", values="Reads"
+    ).fillna(0)
     if "3-altmatch" in irma_reads_df.columns:
         irma_reads_df["Percent Mapping"] = (
             irma_reads_df["3-match"] + irma_reads_df["3-altmatch"]
@@ -116,29 +122,33 @@ def which_ref(sample, protein, ref_protein_dic, irma_summary_df):
     except ValueError:
         return numpy.nan
 
+
 def pass_qc(reason, sequence):
     reason, sequence = str(reason), str(sequence)
-    if reason == 'nan' and sequence != 'nan':
-        return 'Pass'
-    elif reason == 'nan' and sequence == 'nan':
-        return 'No matching reads'
+    if reason == "nan" and sequence != "nan":
+        return "Pass"
+    elif reason == "nan" and sequence == "nan":
+        return "No matching reads"
     else:
         return reason
 
+
 def anyref(ref):
-    if ref == '':
-        return 'Any'
+    if ref == "":
+        return "Any"
     else:
         return ref
+
 
 def failedall(combined_df):
     try:
         for i in combined.index:
-            if str(combined.loc[i]['']) != 'nan':
-                combined_df.loc[i] = 'No assembly'
+            if str(combined.loc[i][""]) != "nan":
+                combined_df.loc[i] = "No assembly"
     except:
         pass
     return combined_df
+
 
 def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     if not qc_values[platform]["allow_stop_codons"]:
@@ -152,11 +162,15 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
         pre_stop_df["Sample"] = pre_stop_df["Sample"].str[:-2]
     try:
         pre_stop_df["Reference"] = pre_stop_df.apply(
-            lambda x: which_ref(x["Sample"], x["Protein"], ref_proteins, irma_summary_df),
+            lambda x: which_ref(
+                x["Sample"], x["Protein"], ref_proteins, irma_summary_df
+            ),
             axis=1,
         )
     except ValueError:
-        pre_stop_df = pd.DataFrame(columns=["Sample", "Protein", "Reference", "Reason_a"])
+        pre_stop_df = pd.DataFrame(
+            columns=["Sample", "Protein", "Reference", "Reason_a"]
+        )
     ref_covered_df = irma_summary_df[
         (
             irma_summary_df["% Reference Covered"]
@@ -179,19 +193,19 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     minor_vars_df[
         "Reason_d"
     ] = f"Count of minor variants at or over 5% > {qc_values[platform]['minor_vars']}"
-    combined = ref_covered_df.merge(
-        med_cov_df, how="outer", on=["Sample", "Reference"]
-    )
+    combined = ref_covered_df.merge(med_cov_df, how="outer", on=["Sample", "Reference"])
     combined = combined.merge(minor_vars_df, how="outer", on=["Sample", "Reference"])
     combined = combined.merge(pre_stop_df, how="outer", on=["Sample", "Reference"])
     combined["Reasons"] = (
         combined[["Reason_a", "Reason_b", "Reason_c", "Reason_d"]]
-        .fillna('')
+        .fillna("")
         .agg("; ".join, axis=1)
     )
     # Add in found sequences
     combined = combined.merge(nt_seqs_df, how="outer", on=["Sample", "Reference"])
-    combined["Reasons"] = combined.apply(lambda x: pass_qc(x['Reasons'], x['Sequence']), axis=1)
+    combined["Reasons"] = combined.apply(
+        lambda x: pass_qc(x["Reasons"], x["Sequence"]), axis=1
+    )
     combined = combined[["Sample", "Reference", "Reasons"]]
     try:
         combined["Reasons"] = (
@@ -201,18 +215,22 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
             .replace("^; *| *;$", "", regex=True)
         )
     except AttributeError:
-        combined["Reasons"] = combined["Reasons"].fillna("Too few reads matching reference")
-    #combined = combined.merge(
+        combined["Reasons"] = combined["Reasons"].fillna(
+            "Too few reads matching reference"
+        )
+    # combined = combined.merge(
     #    irma_summary_df["Sample"], how="outer", on="Sample"
-    #).drop_duplicates()
-    #combined['Reference'] = combined['Reference'].apply(lambda x: anyref(x))
+    # ).drop_duplicates()
+    # combined['Reference'] = combined['Reference'].apply(lambda x: anyref(x))
     combined = (
-        combined.drop_duplicates().pivot(index="Sample", columns="Reference", values="Reasons")
-        #.drop(numpy.nan, axis=1)
+        combined.drop_duplicates().pivot(
+            index="Sample", columns="Reference", values="Reasons"
+        )
+        # .drop(numpy.nan, axis=1)
     )
     combined = combined.apply(lambda x: failedall(x))
     try:
-        combined = combined.drop(columns='')
+        combined = combined.drop(columns="")
     except KeyError:
         pass
     return combined
@@ -222,7 +240,9 @@ def irma_summary(
     irma_path, samplesheet, reads_df, indels_df, alleles_df, coverage_df, ref_lens
 ):
     ss_df = pd.read_csv(samplesheet)
-    allsamples_df = ss_df[['Sample ID']].rename(columns={'Sample ID':'Sample'}).astype(str)
+    allsamples_df = (
+        ss_df[["Sample ID"]].rename(columns={"Sample ID": "Sample"}).astype(str)
+    )
     neg_controls = list(ss_df[ss_df["Sample Type"] == "- Control"]["Sample ID"])
     qc_statement = negative_qc_statement(reads_df, neg_controls)
     with open(f"{irma_path}/../dash-json/qc_statement.json", "w") as out:
@@ -283,9 +303,9 @@ def irma_summary(
     cov_ref_lens = cov_ref_lens[
         ["Sample", "Reference_Name", "% Reference Covered"]
     ].rename(columns={"Reference_Name": "Reference"})
-############################################################################################ !!! This need to be updated when we add full SC2 genome!    
-    if virus.lower() == 'sc2':
-        coverage_df = coverage_df[coverage_df['HMM_Position'].between(21563,25384)]
+    ########### !!! This need to be updated when we add full SC2 genome!
+    if virus.lower() == "sc2":
+        coverage_df = coverage_df[coverage_df["HMM_Position"].between(21563, 25384)]
     coverage_df = (
         coverage_df.groupby(["Sample", "Reference_Name"])
         .agg({"Coverage Depth": "median"})
@@ -304,7 +324,7 @@ def irma_summary(
         .merge(indels_df, "left")
         .merge(allsamples_df, "outer", on="Sample")
     )
-    summary_df['Reference'] = summary_df['Reference'].fillna('')
+    summary_df["Reference"] = summary_df["Reference"].fillna("")
     summary_df = summary_df.fillna(0)
     return summary_df
 
@@ -351,6 +371,12 @@ def generate_dfs(irma_path):
         )
         print(f"  -> ref_data saved to {out.name}")
     print("Building dais_vars_df")
+    # Wait up to 60 seconds for dais_results to be available
+    c=0
+    while c < 60:
+        if len(glob(f"{irma_path}/dais_results/*seq")) == 0:
+            time.sleep(1)
+        c += 1    
     dais_vars_df = dais2pandas.compute_dais_variants(f"{irma_path}/dais_results")
     with open(f"{irma_path}/../dash-json/dais_vars.json", "w") as out:
         dais_vars_df.to_json(out, orient="split", double_precision=3)
@@ -361,66 +387,140 @@ def generate_dfs(irma_path):
     )
     print("Building nt_sequence_df")
     nt_seqs_df = irma2pandas.dash_irma_sequence_df(irma_path)
+
     def flu_dais_modifier(vtype_df, dais_seq_df):
-        tmp = vtype_df.groupby(['Sample','vtype']).count().reset_index().groupby(['Sample'])['vtype'].max().reset_index()
+        tmp = (
+            vtype_df.groupby(["Sample", "vtype"])
+            .count()
+            .reset_index()
+            .groupby(["Sample"])["vtype"]
+            .max()
+            .reset_index()
+        )
         vtype_dic = dict(zip(tmp.Sample, tmp.vtype))
-        dais_seq_df['Target_ref'] = dais_seq_df["Sample"].apply(lambda x: irma2pandas.flu_segs[vtype_dic[x[:-2]]][x[-1]])
+        dais_seq_df["Target_ref"] = dais_seq_df["Sample"].apply(
+            lambda x: irma2pandas.flu_segs[vtype_dic[x[:-2]]][x[-1]]
+        )
         dais_seq_df["Sample"] = dais_seq_df["Sample"].str[:-2]
-        dais_seq_df['Reference'] = dais_seq_df.apply(lambda x: which_ref(x["Sample"], x["Target_ref"], ref_proteins, irma_summary_df), axis=1)
+        dais_seq_df["Reference"] = dais_seq_df.apply(
+            lambda x: which_ref(
+                x["Sample"], x["Target_ref"], ref_proteins, irma_summary_df
+            ),
+            axis=1,
+        )
         return dais_seq_df
+
     if virus == "flu":
         nt_seqs_df = flu_dais_modifier(vtype_df, nt_seqs_df)
     else:
-        nt_seqs_df = nt_seqs_df.merge(irma_summary_df[['Sample', 'Reference']], how='left', on=['Sample'])
+        nt_seqs_df = nt_seqs_df.merge(
+            irma_summary_df[["Sample", "Reference"]], how="left", on=["Sample"]
+        )
     print("Building pass_fail_df")
     pass_fail_df = pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df)
     with open(f"{irma_path}/../dash-json/pass_fail_qc.json", "w") as out:
         pass_fail_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> pass_fail_qc_df saved to {out.name}")
-    pass_fail_seqs_df = pass_fail_df.reset_index().melt(id_vars='Sample').merge(nt_seqs_df, how='left', on=['Sample','Reference']).rename(columns={'value':'Reasons'})
+    pass_fail_seqs_df = (
+        pass_fail_df.reset_index()
+        .melt(id_vars="Sample")
+        .merge(nt_seqs_df, how="left", on=["Sample", "Reference"])
+        .rename(columns={"value": "Reasons"})
+    )
     # Print nt sequence fastas
-    pass_fail_seqs_df.loc[(pass_fail_seqs_df['Reasons'] == 'Pass') | (pass_fail_seqs_df['Reasons'] == "Premature stop codon")].apply(lambda x: seq_df2fastas(irma_path, x['Sample'], x['Reference'], x['Sequence'], 'nt', output_name='amended_consensus.fasta'), axis=1)
+    pass_fail_seqs_df.loc[
+        (pass_fail_seqs_df["Reasons"] == "Pass")
+        | (pass_fail_seqs_df["Reasons"] == "Premature stop codon")
+    ].apply(
+        lambda x: seq_df2fastas(
+            irma_path,
+            x["Sample"],
+            x["Reference"],
+            x["Sequence"],
+            "nt",
+            output_name="amended_consensus.fasta",
+        ),
+        axis=1,
+    )
+    # Wait up to 60 seconds for dais_results to be available
+    c=0
+    while c < 60:
+        if len(glob(f"{irma_path}/dais_results/*seq")) == 0:
+            time.sleep(1)
+        c += 1
     aa_seqs_df = dais2pandas.seq_df(f"{irma_path}/dais_results")
-    if virus == 'flu':
+    if virus == "flu":
         aa_seqs_df = flu_dais_modifier(vtype_df, aa_seqs_df)
-    aa_seqs_df['Reference'] = aa_seqs_df.apply(lambda x: which_ref(x["Sample"], x["Protein"], ref_proteins, irma_summary_df), axis=1)
-    pass_fail_aa_df = pass_fail_df.reset_index().melt(id_vars='Sample').merge(aa_seqs_df, how='left', on=['Sample','Reference']).rename(columns={'value':'Reasons'})
+    aa_seqs_df["Reference"] = aa_seqs_df.apply(
+        lambda x: which_ref(x["Sample"], x["Protein"], ref_proteins, irma_summary_df),
+        axis=1,
+    )
+    pass_fail_aa_df = (
+        pass_fail_df.reset_index()
+        .melt(id_vars="Sample")
+        .merge(aa_seqs_df, how="left", on=["Sample", "Reference"])
+        .rename(columns={"value": "Reasons"})
+    )
     # Print aa sequence fastas
-    pass_fail_aa_df.loc[(pass_fail_aa_df['Reasons'] == 'Pass') | (pass_fail_aa_df['Reasons'] == "Premature stop codon")].apply(lambda x: seq_df2fastas(irma_path, x['Sample'], x['Protein'], x['AA Sequence'], 'nt', output_name='amino_acid_consensus.fasta'), axis=1)
+    pass_fail_aa_df.loc[
+        (pass_fail_aa_df["Reasons"] == "Pass")
+        | (pass_fail_aa_df["Reasons"] == "Premature stop codon")
+    ].apply(
+        lambda x: seq_df2fastas(
+            irma_path,
+            x["Sample"],
+            x["Protein"],
+            x["AA Sequence"],
+            "nt",
+            output_name="amino_acid_consensus.fasta",
+        ),
+        axis=1,
+    )
     with open(f"{irma_path}/../dash-json/nt_sequences.json", "w") as out:
         nt_seqs_df.to_json(out, orient="split")
         print(f"  -> nt_sequence_df saved to {out.name}")
-    irma_summary_df = irma_summary_df.merge(pass_fail_df.reset_index().melt(id_vars=["Sample"], value_name="Reasons"), how='left', on=['Sample','Reference'])
+    irma_summary_df = irma_summary_df.merge(
+        pass_fail_df.reset_index().melt(id_vars=["Sample"], value_name="Reasons"),
+        how="left",
+        on=["Sample", "Reference"],
+    )
+
     def noref(ref):
-        if str(ref) == '':
-            return 'N/A'
+        if str(ref) == "":
+            return "N/A"
         else:
             return ref
-    irma_summary_df['Reference'] = irma_summary_df['Reference'].apply(lambda x: noref(x))
-    irma_summary_df['Reasons'] = irma_summary_df['Reasons'].fillna('Fail')
-    irma_summary_df = irma_summary_df.rename(columns={'Reasons': 'Pass/Fail Reason'})
+
+    irma_summary_df["Reference"] = irma_summary_df["Reference"].apply(
+        lambda x: noref(x)
+    )
+    irma_summary_df["Reasons"] = irma_summary_df["Reasons"].fillna("Fail")
+    irma_summary_df = irma_summary_df.rename(columns={"Reasons": "Pass/Fail Reason"})
     with open(f"{irma_path}/../dash-json/irma_summary.json", "w") as out:
         irma_summary_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> irma_summary_df saved to {out.name}")
     return read_df, coverage_df, segments, segcolor, pass_fail_df
 
+
 def seq_df2fastas(irma_path, sample, reference, sequence, nt_or_aa, output_name=False):
     if not output_name:
         output_name = f"{nt_or_aa}_{sample}_{reference}.fasta"
-    with open(f"{irma_path}/../{output_name}", 'a+') as out:
+    with open(f"{irma_path}/../{output_name}", "a+") as out:
         print(f">{sample}|{reference}\n{sequence}", file=out)
+
 
 ###################################################################
 # Figures
 ###################################################################
+
 
 def pivot4heatmap(coverage_df):
     if "Coverage_Depth" in coverage_df.columns:
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
-    if virus.lower() == 'sc2':
-        coverage_df = coverage_df[coverage_df['HMM_Position'].between(21563,25384)]
+    if virus.lower() == "sc2-spike":
+        coverage_df = coverage_df[coverage_df["HMM_Position"].between(21563, 25384)]
     df2 = coverage_df[["Sample", "Reference_Name", cov_header]]
     df3 = df2.groupby(["Sample", "Reference_Name"]).median().reset_index()
     try:
@@ -439,7 +539,13 @@ def createheatmap(irma_path, coverage_medians_df):
         cov_header = "Coverage_Depth"
     else:
         cov_header = "Coverage Depth"
-    coverage_medians_df = coverage_medians_df.pivot(index='Sample',columns='Segment').fillna(0).reset_index().melt(id_vars='Sample', value_name=cov_header).drop([None], axis=1)
+    coverage_medians_df = (
+        coverage_medians_df.pivot(index="Sample", columns="Segment")
+        .fillna(0)
+        .reset_index()
+        .melt(id_vars="Sample", value_name=cov_header)
+        .drop([None], axis=1)
+    )
     cov_max = coverage_medians_df[cov_header].max()
     if cov_max <= 200:
         cov_max = 200
@@ -454,7 +560,7 @@ def createheatmap(irma_path, coverage_medians_df):
             zmid=100,
             zmax=cov_max,
             colorscale="gnbu",
-            hovertemplate="%{y} = %{z:,.0f}x<extra>%{x}<br></extra>"
+            hovertemplate="%{y} = %{z:,.0f}x<extra>%{x}<br></extra>",
         )
     )
     fig.update_layout(legend=dict(x=0.4, y=1.2, orientation="h"))
@@ -465,41 +571,59 @@ def createheatmap(irma_path, coverage_medians_df):
 
 def create_passfail_heatmap(irma_path, pass_fail_df):
     print("Building pass_fail_heatmap")
-    if virus == 'flu':
-        pass_fail_df = pass_fail_df.fillna('z').reset_index().melt(id_vars=["Sample"], value_name="Reasons")
-        pass_fail_df['Reference'] = pass_fail_df['Reference'].apply(lambda x: x.split('_')[1])
-        pass_fail_df = pass_fail_df.sort_values(by=['Sample','Reference','Reasons'], ascending=True).drop_duplicates(subset=['Sample','Reference'], keep='first')
-        pass_fail_df['Reasons']=pass_fail_df['Reasons'].replace('z', 'No assembly')
+    if virus == "flu":
+        pass_fail_df = (
+            pass_fail_df.fillna("z")
+            .reset_index()
+            .melt(id_vars=["Sample"], value_name="Reasons")
+        )
+        pass_fail_df["Reference"] = pass_fail_df["Reference"].apply(
+            lambda x: x.split("_")[1]
+        )
+        pass_fail_df = pass_fail_df.sort_values(
+            by=["Sample", "Reference", "Reasons"], ascending=True
+        ).drop_duplicates(subset=["Sample", "Reference"], keep="first")
+        pass_fail_df["Reasons"] = pass_fail_df["Reasons"].replace("z", "No assembly")
     else:
-        pass_fail_df = pass_fail_df.fillna('No assembly').reset_index().melt(id_vars=["Sample"], value_name="Reasons")
+        pass_fail_df = (
+            pass_fail_df.fillna("No assembly")
+            .reset_index()
+            .melt(id_vars=["Sample"], value_name="Reasons")
+        )
     pass_fail_df = pass_fail_df.dropna()
+
     def assign_number(reason):
-        if reason == 'No assembly':
+        if reason == "No assembly":
             return 4
-        elif reason == 'Pass':
-            return -4#numpy.nan
-        elif reason == 'Premature stop codon':
+        elif reason == "Pass":
+            return -4  # numpy.nan
+        elif reason == "Premature stop codon":
             return -1
         else:
-            return len(reason.split(';'))
-    pass_fail_df['Number'] = pass_fail_df['Reasons'].apply(lambda x: assign_number(x))
-    pass_fail_df['Reasons'].fillna('No assembly')
-    fig = go.Figure(data=go.Heatmap(
-        x=list(pass_fail_df["Sample"]),
-        y=list(pass_fail_df["Reference"]),
-        z=list(pass_fail_df["Number"]),
-        customdata=list(pass_fail_df['Reasons']),
-        zmin=-4,
-        zmax=6,
-        zmid=1,
-        colorscale='blackbody_r',# 'ylorrd',
-        hovertemplate="%{x}<br>%{customdata}<extra>%{y}<br></extra>"
-    ))
+            return len(reason.split(";"))
+
+    pass_fail_df["Number"] = pass_fail_df["Reasons"].apply(lambda x: assign_number(x))
+    pass_fail_df["Reasons"].fillna("No assembly")
+    fig = go.Figure(
+        data=go.Heatmap(
+            x=list(pass_fail_df["Sample"]),
+            y=list(pass_fail_df["Reference"]),
+            z=list(pass_fail_df["Number"]),
+            customdata=list(pass_fail_df["Reasons"]),
+            zmin=-4,
+            zmax=6,
+            zmid=1,
+            colorscale="blackbody_r",  # 'ylorrd',
+            hovertemplate="%{x}<br>%{customdata}<extra>%{y}<br></extra>",
+        )
+    )
     fig.update_xaxes(side="top")
     fig.update_traces(showscale=False)
-    fig.update_layout(paper_bgcolor='white', plot_bgcolor='white')
+    fig.update_layout(paper_bgcolor="white", plot_bgcolor="white")
     pio.write_json(fig, f"{irma_path}/../dash-json/pass_fail_heatmap.json")
-    print(f"  -> pass_fail heatmap json saved to {irma_path}/../dash-json/pass_fail_heatmap.json")
+    print(
+        f"  -> pass_fail heatmap json saved to {irma_path}/../dash-json/pass_fail_heatmap.json"
+    )
 
 
 def createsankey(irma_path, read_df):
@@ -509,7 +633,9 @@ def createsankey(irma_path, read_df):
             read_df[read_df["Sample"] == sample]
         )
         pio.write_json(sankeyfig, f"{irma_path}/../dash-json/readsfig_{sample}.json")
-        print(f"  -> read sankey plot json saved to {irma_path}/../dash-json/readsfig_{sample}.json")
+        print(
+            f"  -> read sankey plot json saved to {irma_path}/../dash-json/readsfig_{sample}.json"
+        )
 
 
 def createReadPieFigure(irma_path, read_df):
@@ -532,10 +658,12 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         pos_header = "HMM_Position"
     else:
         pos_header = "Position"
+
     def zerolift(x):
         if x == 0:
             return 0.000000000001
         return x
+
     if not cov_linear_y:
         df[cov_header] = df[cov_header].apply(lambda x: zerolift(x))
     df2 = df[df["Sample"] == sample]
@@ -561,7 +689,7 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
             "ORF8": [27894, 28260],
             "N": [28274, 29534],
             "ORF10": [29558, 29675],
-            "ORF9b" : [28284, 28577]
+            "ORF9b": [28284, 28577],
         }
         color_index = 0
         print(orf_pos)
@@ -600,8 +728,8 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         type="line",
         x0=0,
         x1=df2[pos_header].max(),
-        y0=qc_values[platform]['med_cov'],
-        y1=qc_values[platform]['med_cov'],
+        y0=qc_values[platform]["med_cov"],
+        y1=qc_values[platform]["med_cov"],
         line=dict(color="Black", dash="dash", width=5),
     )
     ymax = df2[cov_header].max()
@@ -628,12 +756,16 @@ def createcoverageplot(irma_path, coverage_df, segments, segcolor):
         coveragefig = createSampleCoverageFig(
             sample, coverage_df, segments, segcolor, False
         )
-        pio.write_json(coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_linear.json")
+        pio.write_json(
+            coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_linear.json"
+        )
         print(f"  -> saved {irma_path}/../dash-json/coveragefig_{sample}_linear.json")
         coveragefig = createSampleCoverageFig(
             sample, coverage_df, segments, segcolor, True
         )
-        pio.write_json(coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_log.json")
+        pio.write_json(
+            coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_log.json"
+        )
         print(f"  -> saved {irma_path}/../dash-json/coveragefig_{sample}_log.json")
     print(f" --> All coverage jsons saved")
 
