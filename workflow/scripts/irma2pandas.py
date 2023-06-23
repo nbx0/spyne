@@ -201,9 +201,7 @@ def dash_irma_indels_df(irma_path, full=False):
     insertionFiles = glob(irma_path + "/*/tables/*insertions.txt")
     deletionFiles = glob(irma_path + "/*/tables/*deletions.txt")
     idf = irmatable2df(insertionFiles)
-    idf = idf[idf['Frequency'] >= 0.2]
     ddf = irmatable2df(deletionFiles)
-    ddf = ddf[ddf['Frequency'] >= 0.2]
     df = pd.concat([idf, ddf])
     if "HMM_Position" in df.columns:
         df = df.rename(
