@@ -73,8 +73,9 @@ else:
     data = {'runid':runpath.split('/')[-1], 'samples':{}}
     for d in dfd.values():
         id = d['Sample ID']
-        R1_fastq = glob(f"{runpath}/**/{id}*R1*fastq.gz")[0]
-        R2_fastq = glob(f"{runpath}/**/{id}*R2*fastq.gz")[0]
+        print(f"runpath = {runpath}\nid = {id}")
+        R1_fastq = glob(f"{runpath}/**/{id}*R1*fastq.gz", recursive=True)[0]
+        R2_fastq = glob(f"{runpath}/**/{id}*R2*fastq.gz", recursive=True)[0]
         if len(R1_fastq) < 1 or len(R2_fastq) < 1:
             print(f"Fastq pair not found for sample {id}")
             exit()

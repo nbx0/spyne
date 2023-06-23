@@ -20,7 +20,7 @@ try:
     irma_path, samplesheet, platform, virus = argv[1], argv[2], argv[3], argv[4]
 except IndexError:
     exit(
-        f"\n\tUSAGE: python {__file__} <path/to/irma/results/> <samplesheet> <ont|illumina> <flu|sc2>\n"
+        f"\n\tUSAGE: python {__file__} <path/to/irma/results/> <samplesheet> <ont|illumina> <flu|sc2|sc2-spike>\n"
         f"\n\t\t*Inside path/to/irma/results should be the individual samples-irma-dir results\n"
         f"\n\tYou entered:\n\t{executable} {' '.join(argv)}\n\n"
     )
@@ -292,8 +292,10 @@ def irma_summary(
         .rename(columns={"Sample": "maplen"})
         .reset_index()
     )
+
     def perc_len(maplen, ref):
         return maplen / ref_lens[ref] * 100
+
     cov_ref_lens["% Reference Covered"] = cov_ref_lens.apply(
         lambda x: perc_len(x["maplen"], x["Reference_Name"]), axis=1
     )
@@ -304,7 +306,7 @@ def irma_summary(
         ["Sample", "Reference_Name", "% Reference Covered"]
     ].rename(columns={"Reference_Name": "Reference"})
     ########### !!! This need to be updated when we add full SC2 genome!
-    if virus.lower() == "sc2":
+    if virus.lower() == "sc2-spike":
         coverage_df = coverage_df[coverage_df["HMM_Position"].between(21563, 25384)]
     coverage_df = (
         coverage_df.groupby(["Sample", "Reference_Name"])
@@ -372,11 +374,11 @@ def generate_dfs(irma_path):
         print(f"  -> ref_data saved to {out.name}")
     print("Building dais_vars_df")
     # Wait up to 60 seconds for dais_results to be available
-    c=0
+    c = 0
     while c < 60:
         if len(glob(f"{irma_path}/dais_results/*seq")) == 0:
             time.sleep(1)
-        c += 1    
+        c += 1
     dais_vars_df = dais2pandas.compute_dais_variants(f"{irma_path}/dais_results")
     with open(f"{irma_path}/../dash-json/dais_vars.json", "w") as out:
         dais_vars_df.to_json(out, orient="split", double_precision=3)
@@ -443,7 +445,7 @@ def generate_dfs(irma_path):
         axis=1,
     )
     # Wait up to 60 seconds for dais_results to be available
-    c=0
+    c = 0
     while c < 60:
         if len(glob(f"{irma_path}/dais_results/*seq")) == 0:
             time.sleep(1)
