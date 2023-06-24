@@ -601,10 +601,12 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
             return 4
         elif reason == "Pass":
             return -4  # numpy.nan
-        elif reason == "Premature stop codon":
-            return -1
-        else:
+        elif len(reason.split(";")) > 1:
             return len(reason.split(";"))
+        else: #reason == "Premature stop codon":
+            return -1
+        #else:
+        #    return len(reason.split(";"))
 
     pass_fail_df["Number"] = pass_fail_df["Reasons"].apply(lambda x: assign_number(x))
     pass_fail_df["Reasons"].fillna("No assembly")
