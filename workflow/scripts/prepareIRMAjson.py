@@ -157,7 +157,7 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
         ]
     else:
         pre_stop_df = pd.DataFrame(columns=["Sample", "Protein"])
-    pre_stop_df["Reason_a"] = "Premature stop codon"
+    pre_stop_df["Reason_a"] = f"Premature stop codon {set(pre_stop_df['Protein'])}"
     if virus == "flu":
         pre_stop_df["Sample"] = pre_stop_df["Sample"].str[:-2]
     try:

@@ -140,7 +140,8 @@ checkpoint checkirma:
     log:
         "logs/irma/checkirma_{barcode}.log"
     shell:
-        "[[ -d IRMA/{wildcards.barcode}/figures ]] &&"
+        "[ -d IRMA/{wildcards.barcode}/amended_consensus ] &&"
+        "[ \"$(ls -A IRMA/{wildcards.barcode}/amended_consensus)\" ] &&"
         " echo passed > {output} ||"
         " echo failed > {output}"
 

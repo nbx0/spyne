@@ -68,7 +68,8 @@ checkpoint checkirma:
     log:
         "logs/irma/checkirma_{sample}.log"
     shell:
-        "[[ -d IRMA/{wildcards.sample}/figures ]] &&"
+        "[ -d IRMA/{wildcards.sample}/amended_consensus ] &&"
+        "[ \"$(ls -A IRMA/{wildcards.sample}/amended_consensus)\" ] &&"
         " echo passed > {output} ||"
         " echo failed > {output}"
 
