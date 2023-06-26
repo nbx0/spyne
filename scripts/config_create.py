@@ -100,7 +100,7 @@ if "ont" in experiment_type.lower():
 
     if "flu" in experiment_type.lower():
         snakefile_path += "influenza_snakefile"
-    elif "sc2" in experiment_type.lower():
+    elif "sc2-spike" in experiment_type.lower():
         snakefile_path += "sc2_spike_snakefile"
 else:
     if "flu" in experiment_type.lower():
