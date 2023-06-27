@@ -350,13 +350,13 @@ def generate_dfs(irma_path):
         print(f"  -> vtype_df saved to {out.name}")
     print("Building alleles_df")
     alleles_df = irma2pandas.dash_irma_alleles_df(irma_path)
-    alleles_df = alleles_df[alleles_df['Minority Frequency'] >= 0.05]
+    alleles_df = alleles_df[alleles_df["Minority Frequency"] >= 0.05]
     with open(f"{irma_path}/../dash-json/alleles.json", "w") as out:
         alleles_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> alleles_df saved to {out.name}")
     print("Building indels_df")
     indels_df = irma2pandas.dash_irma_indels_df(irma_path)
-    indels_df = indels_df[indels_df['Frequency'] >= 0.2]
+    indels_df = indels_df[indels_df["Frequency"] >= 0.2]
     with open(f"{irma_path}/../dash-json/indels.json", "w") as out:
         indels_df.to_json(out, orient="split", double_precision=3)
         print(f"  -> indels_df saved to {out.name}")
@@ -604,12 +604,12 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
             print(f"reason={reason} | number={-4}")
             return -4  # numpy.nan
         elif len(reason.split(";")) > 1:
-            print(f"reason={reason} | number={len(reason.split(";"))}")
+            print(f"reason={reason} | number={len(reason.split(';'))}")
             return len(reason.split(";"))
-        else: #reason == "Premature stop codon":
+        else:  # reason == "Premature stop codon":
             print(f"reason={reason} | number={-1}")
             return -1
-        #else:
+        # else:
         #    return len(reason.split(";"))
 
     pass_fail_df["Number"] = pass_fail_df["Reasons"].apply(lambda x: assign_number(x))
