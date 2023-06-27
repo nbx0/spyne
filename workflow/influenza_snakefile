@@ -21,7 +21,7 @@ rule gather_fastqs:
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq} || touch IRMA/SC2.{wildcards.barcode}.fin"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq} || touch IRMA/FLU_{wildcards.barcode}.fin"
 
 rule subsample:
     input:
