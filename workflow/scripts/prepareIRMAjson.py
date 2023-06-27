@@ -598,12 +598,16 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
 
     def assign_number(reason):
         if reason == "No assembly":
+            print(f"reason={reason} | number={4}")
             return 4
         elif reason == "Pass":
+            print(f"reason={reason} | number={-4}")
             return -4  # numpy.nan
-        elif len(reason.split(";")) > 0:
+        elif len(reason.split(";")) > 1:
+            print(f"reason={reason} | number={len(reason.split(";"))}")
             return len(reason.split(";"))
         else: #reason == "Premature stop codon":
+            print(f"reason={reason} | number={-1}")
             return -1
         #else:
         #    return len(reason.split(";"))
