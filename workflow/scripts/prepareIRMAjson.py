@@ -601,7 +601,7 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
             return 4
         elif reason == "Pass":
             return -4  # numpy.nan
-        elif len(reason.split(";")) > 1:
+        elif len(reason.split(";")) > 0:
             return len(reason.split(";"))
         else: #reason == "Premature stop codon":
             return -1
