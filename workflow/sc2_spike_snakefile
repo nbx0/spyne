@@ -42,6 +42,7 @@ rule subsample:
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
+        " || touch {output}"
 
 rule barcode_trim_left:
     input:
