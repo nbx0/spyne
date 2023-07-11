@@ -21,7 +21,7 @@ rule gather_fastqs:
     params:
         barcode_number = lambda wildcards: config["barcodes"][wildcards.barcode]["barcode_number"]
     shell:
-        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq}"
+        "cat fastq_pass/{params.barcode_number}/*fastq* > {output.fq} || touch IRMA/FLU_{wildcards.barcode}.fin"
 
 rule subsample:
     input:
@@ -42,6 +42,7 @@ rule subsample:
         " qin=33"
         " 1> {log.out}"
         " 2> {log.err}"
+        " || touch {output}"
 
 rule barcode_trim_left:
     input:
@@ -128,7 +129,7 @@ rule irma:
     threads: 14
     message: "Step 5 - assembling genome with IRMA"
     shell:
-        "docker exec irma IRMA FLU-minion /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out}"
+        "docker exec irma IRMA FLU-minion /data/{config[runid]}/{input} /data/{config[runid]}/IRMA/{wildcards.barcode} 2> {log.err} |tee -a {log.out} || touch {output}"
 
 # Pipeline waits here for all samples to produce the checkpoint input needed
 #  here and then reevaluates the needed DAG for each sample.
