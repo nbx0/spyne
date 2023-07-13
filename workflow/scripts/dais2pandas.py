@@ -140,7 +140,10 @@ def AAvars(refseq, sampseq):
         if r != s:
             vars.append(f"{r}{pos}{s}")
         pos += 1
-    return ", ".join(vars)
+    if len(vars) >= 1:
+        return ", ".join(vars)
+    else:
+        return ""
 
 
 def compute_dais_variants(results_path):
@@ -159,6 +162,6 @@ def compute_dais_variants(results_path):
         ),
         axis=1,
     )
-    seqs["AA Variant Count"] = seqs["AA Variants"].map(lambda x: len(x.split(",")))
+    seqs["AA Variant Count"] = seqs["AA Variants"].map(lambda x: len(x.split(",")) if x != '' else 0)
     seqs = seqs[["Sample", "Reference", "Protein", "AA Variant Count", "AA Variants"]]
     return seqs
