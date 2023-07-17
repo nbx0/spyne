@@ -32,6 +32,8 @@ with open(
 ) as y:
     qc_values = yaml.safe_load(y)
 
+qc_plat_vir = f"{platform}-{virus}"
+
 proteins = {
     "sc2": "ORF10 S orf1ab ORF6 ORF8 ORF7a ORF7b M N ORF3a E ORF9b",
     "flu": "PB1-F2 HA M1 NP HA1 BM2 NB PB2 NEP PB1 HA-signal PA-X NS1 M2 NA PA",
@@ -151,7 +153,7 @@ def failedall(combined_df):
 
 
 def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
-    if not qc_values[platform]["allow_stop_codons"]:
+    if not qc_values[qc_plat_vir]["allow_stop_codons"]:
         pre_stop_df = dais_vars_df[dais_vars_df["AA Variants"].str.contains("[0-9]\*")][
             ["Sample", "Protein"]
         ]
@@ -174,25 +176,25 @@ def pass_fail_qc_df(irma_summary_df, dais_vars_df, nt_seqs_df):
     ref_covered_df = irma_summary_df[
         (
             irma_summary_df["% Reference Covered"]
-            < qc_values[platform]["perc_ref_covered"]
+            < qc_values[qc_plat_vir]["perc_ref_covered"]
         )
     ][["Sample", "Reference"]]
     ref_covered_df[
         "Reason_b"
-    ] = f"Less than {qc_values[platform]['perc_ref_covered']}% of reference covered"
+    ] = f"Less than {qc_values[qc_plat_vir]['perc_ref_covered']}% of reference covered"
     med_cov_df = irma_summary_df[
-        (irma_summary_df["Median Coverage"] < qc_values[platform]["med_cov"])
+        (irma_summary_df["Median Coverage"] < qc_values[qc_plat_vir]["med_cov"])
     ][["Sample", "Reference"]]
-    med_cov_df["Reason_c"] = f"Median coverage < {qc_values[platform]['med_cov']}"
+    med_cov_df["Reason_c"] = f"Median coverage < {qc_values[qc_plat_vir]['med_cov']}"
     minor_vars_df = irma_summary_df[
         (
             irma_summary_df["Count of Minor SNVs >= 0.05"]
-            > qc_values[platform]["minor_vars"]
+            > qc_values[qc_plat_vir]["minor_vars"]
         )
     ][["Sample", "Reference"]]
     minor_vars_df[
         "Reason_d"
-    ] = f"Count of minor variants at or over 5% > {qc_values[platform]['minor_vars']}"
+    ] = f"Count of minor variants at or over 5% > {qc_values[qc_plat_vir]['minor_vars']}"
     combined = ref_covered_df.merge(med_cov_df, how="outer", on=["Sample", "Reference"])
     combined = combined.merge(minor_vars_df, how="outer", on=["Sample", "Reference"])
     combined = combined.merge(pre_stop_df, how="outer", on=["Sample", "Reference"])
@@ -390,7 +392,7 @@ def generate_dfs(irma_path):
         irma_path, samplesheet, read_df, indels_df, alleles_df, coverage_df, ref_lens
     )
     print("Building nt_sequence_df")
-    nt_seqs_df = irma2pandas.dash_irma_sequence_df(irma_path)
+    nt_seqs_df = irma2pandas.dash_irma_sequence_df(irma_path, pad=qc_values[qc_plat_vir]['padded_consensus'])
 
     def flu_dais_modifier(vtype_df, dais_seq_df):
         tmp = (
@@ -636,11 +638,11 @@ def create_passfail_heatmap(irma_path, pass_fail_df):
     )
 
 
-def createsankey(irma_path, read_df):
+def createsankey(irma_path, read_df, virus):
     print(f"Building read sankey plot")
     for sample in read_df["Sample"].unique():
         sankeyfig = irma2pandas.dash_reads_to_sankey(
-            read_df[read_df["Sample"] == sample]
+            read_df[read_df["Sample"] == sample], virus
         )
         pio.write_json(sankeyfig, f"{irma_path}/../dash-json/readsfig_{sample}.json")
         print(
@@ -738,8 +740,8 @@ def createSampleCoverageFig(sample, df, segments, segcolor, cov_linear_y):
         type="line",
         x0=0,
         x1=df2[pos_header].max(),
-        y0=qc_values[platform]["med_cov"],
-        y1=qc_values[platform]["med_cov"],
+        y0=qc_values[qc_plat_vir]["med_cov"],
+        y1=qc_values[qc_plat_vir]["med_cov"],
         line=dict(color="Black", dash="dash", width=5),
     )
     ymax = df2[cov_header].max()
@@ -764,25 +766,25 @@ def createcoverageplot(irma_path, coverage_df, segments, segcolor):
     print(f"Building coverage plots for {len(samples)} samples")
     for sample in samples:
         coveragefig = createSampleCoverageFig(
-            sample, coverage_df, segments, segcolor, False
+            sample, coverage_df, segments, segcolor, True
         )
         pio.write_json(
             coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_linear.json"
         )
         print(f"  -> saved {irma_path}/../dash-json/coveragefig_{sample}_linear.json")
-        coveragefig = createSampleCoverageFig(
-            sample, coverage_df, segments, segcolor, True
-        )
-        pio.write_json(
-            coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_log.json"
-        )
-        print(f"  -> saved {irma_path}/../dash-json/coveragefig_{sample}_log.json")
+        #coveragefig = createSampleCoverageFig(
+        #    sample, coverage_df, segments, segcolor, True
+        #)
+        #pio.write_json(
+        #    coveragefig, f"{irma_path}/../dash-json/coveragefig_{sample}_log.json"
+        #)
+        #print(f"  -> saved {irma_path}/../dash-json/coveragefig_{sample}_log.json")
     print(f" --> All coverage jsons saved")
 
 
 def generate_figs(irma_path, read_df, coverage_df, segments, segcolor, pass_fail_df):
     createReadPieFigure(irma_path, read_df)
-    createsankey(irma_path, read_df)
+    createsankey(irma_path, read_df, virus)
     createheatmap(irma_path, pivot4heatmap(coverage_df))
     create_passfail_heatmap(irma_path, pass_fail_df)
     createcoverageplot(irma_path, coverage_df, segments, segcolor)
