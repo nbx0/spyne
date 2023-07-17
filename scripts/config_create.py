@@ -10,24 +10,30 @@ import os
 root = "/".join(abspath(__file__).split("/")[:-2])
 if len(argv) < 2:
     exit(
-        "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type> <optional: primer_schema>\n".format(__file__)
+        "\n\tUSAGE: {} <samplesheet.csv> <runpath> <experiment_type> <optional: primer_schema> <clean_option> \n".format(__file__)
     )
 
+#try:
+#    runpath = argv[2]
+#    experiment_type = argv[3]
+#except (IndexError, ValueError):
+#    runid = "testRunID"
+print(f"argv[1:]= {argv[1:]}")
 try:
-    runpath = argv[2]
-    experiment_type = argv[3]
-except (IndexError, ValueError):
-    runid = "testRunID"
-try:
-    print(argv[4])
-    if "CLEANUP" not in argv[4]:
-        primer_schema = argv[4]
-        amplicon = True
-    else:
-        amplicon = False
+    samplesheet, runpath, experiment_type, primer_schema, clean_option = argv[1:]
+    amplicon = True
 except:
+    samplesheet, runpath, experiment_type, clean_option = argv[1:]
     amplicon = False
-df = pd.read_csv(argv[1])
+#    print(argv[4])
+#    if "CLEANUP" not in argv[4]:
+#        primer_schema = argv[4]
+#        amplicon = True
+#    else:
+#        amplicon = False
+#except:
+#    amplicon = False
+df = pd.read_csv(samplesheet)#argv[1])
 dfd = df.to_dict("index")
 
 if 'ont' in experiment_type.lower():
@@ -108,7 +114,7 @@ else:
     elif "sc2" in experiment_type.lower():
         snakefile_path += "illumina_sc2_snakefile"
 
-if "TESTDEV-QUICK" in argv:
+if "TESTDEV-QUICK" in clean_option:
     snake_cmd = (
         f"snakemake -s {snakefile_path} \
         --configfile config.yaml \
@@ -116,7 +122,7 @@ if "TESTDEV-QUICK" in argv:
         --printshellcmds \
         --rerun-incomplete"
     )
-elif "TESTDEV-PRINTDAG" in argv:
+elif "TESTDEV-PRINTDAG" in clean_option:
     snake_cmd = (
         f"snakemake -s {snakefile_path} \
         --configfile config.yaml \
@@ -124,7 +130,7 @@ elif "TESTDEV-PRINTDAG" in argv:
         --printshellcmds \
         --dag |awk '/digraph/,/\u007d/' |dot -Tpdf > filegraph.pdf"
     ) 
-elif "TESTDEV-DEBUGDAG" in argv:
+elif "TESTDEV-DEBUGDAG" in clean_option:
     snake_cmd = (
         f"snakemake -s {snakefile_path} \
         --configfile config.yaml \
@@ -147,7 +153,7 @@ print(f"\n\nSNAKEMAKE CMD:\n {snake_cmd}\n\n")
 subprocess.run(snake_cmd, shell=True)
 
 # Remove extraneous intermediate files and tar archive logs, F1 bam and plurality consensus
-if "CLEANUP-FOOTPRINT" in argv:
+if "CLEANUP-FOOTPRINT" in clean_option:
     fullsize = int(subprocess.run(f"du -d0", stdout=subprocess.PIPE, shell=True).stdout.decode().split('\t')[0])
     subprocess.run(f"{root}/workflow/scripts/spyne_cleanup.sh", shell=True)
     cleansize = int(subprocess.run(f"du -0", stdout=subprocess.PIPE, shell=True).stdout.decode().split('\t')[0])
