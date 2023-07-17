@@ -19,7 +19,7 @@ output:
 #### (1) Clone this respitory
 
 ```
-git clone https://github.com/nbx0/spyne/tree/container_init
+git clone https://github.com/cdcgov/spyne/tree/container_init
 ``` 
 
 #### (2) CD to `spyne` folder 
@@ -183,7 +183,7 @@ docker exec -w /data irma-1.0.2p3 IRMA <MODULE|MODULE-CONFIG> <fastq|fastq.gz> [
 
 <br>
 
-Any questions or issues? Please report them on our [github issues](https://github.com/nbx0/spyne/issues)
+Any questions or issues? Please report them on our [github issues](https://github.com/cdcgov/spyne/issues)
 
 <br>
 
